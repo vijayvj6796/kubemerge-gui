@@ -1,0 +1,21 @@
+build/bin
+node_modules
+frontend/dist
+
+# Wails build output
+/build/bin/
+/frontend/dist/
+/frontend/node_modules/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Go
+*.exe
+*.dll
+*.so
+*.test
