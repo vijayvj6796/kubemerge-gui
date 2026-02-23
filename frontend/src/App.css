@@ -171,3 +171,40 @@ code {
   color: var(--muted);
   font-size: 13px;
 }
+
+/* Custom dropdown (avoids native <select> popup issues in WebView/Wails) */
+.dropdown {
+  position: relative;
+  width: 100%;
+}
+
+.dropdownSelected {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+  user-select: none;
+}
+
+.dropdownMenu {
+  margin-top: 6px;
+  max-height: 240px;
+  overflow-y: auto;
+  border-radius: 12px;
+  background: #1c2435;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.dropdownItem {
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.dropdownItem:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.dropdownItem.active {
+  background: rgba(59, 130, 246, 0.22);
+}

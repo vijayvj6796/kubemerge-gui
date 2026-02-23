@@ -4,10 +4,20 @@ import {main} from '../models';
 
 export function GetAllContexts():Promise<Array<string>>;
 
+export function GetAllContextsForPath(arg1:string):Promise<Array<string>>;
+
 export function GetCurrentContext():Promise<string>;
 
+export function GetCurrentContextForPath(arg1:string):Promise<string>;
+
+export function ListWSLDistros():Promise<Array<string>>;
+
 export function MergeIntoDefault(arg1:string):Promise<main.MergeResult>;
+
+export function ResolveTargetKubeconfig(arg1:main.TargetSelection):Promise<string>;
 
 export function SelectKubeconfig():Promise<string>;
 
 export function SwitchContext(arg1:string):Promise<void>;
+
+export function SwitchContextForPath(arg1:string,arg2:string):Promise<void>;

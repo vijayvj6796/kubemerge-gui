@@ -6,12 +6,28 @@ export function GetAllContexts() {
   return window['go']['main']['App']['GetAllContexts']();
 }
 
+export function GetAllContextsForPath(arg1) {
+  return window['go']['main']['App']['GetAllContextsForPath'](arg1);
+}
+
 export function GetCurrentContext() {
   return window['go']['main']['App']['GetCurrentContext']();
 }
 
+export function GetCurrentContextForPath(arg1) {
+  return window['go']['main']['App']['GetCurrentContextForPath'](arg1);
+}
+
+export function ListWSLDistros() {
+  return window['go']['main']['App']['ListWSLDistros']();
+}
+
 export function MergeIntoDefault(arg1) {
   return window['go']['main']['App']['MergeIntoDefault'](arg1);
+}
+
+export function ResolveTargetKubeconfig(arg1) {
+  return window['go']['main']['App']['ResolveTargetKubeconfig'](arg1);
 }
 
 export function SelectKubeconfig() {
@@ -20,4 +36,8 @@ export function SelectKubeconfig() {
 
 export function SwitchContext(arg1) {
   return window['go']['main']['App']['SwitchContext'](arg1);
+}
+
+export function SwitchContextForPath(arg1, arg2) {
+  return window['go']['main']['App']['SwitchContextForPath'](arg1, arg2);
 }

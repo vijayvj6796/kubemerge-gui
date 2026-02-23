@@ -3,9 +3,11 @@ import "./App.css";
 import {
   SelectKubeconfig,
   MergeIntoDefault,
-  GetCurrentContext,
-  SwitchContext,
-  GetAllContexts,
+  ListWSLDistros,
+  ResolveTargetKubeconfig,
+  GetAllContextsForPath,
+  GetCurrentContextForPath,
+  SwitchContextForPath,
 } from "../wailsjs/go/main/App";
 
 type MergeResult = {
@@ -18,6 +20,8 @@ type MergeResult = {
   message: string;
 };
 
+type TargetKind = "windows" | "wsl";
+
 export default function App() {
   const [filePath, setFilePath] = useState<string>("");
   const [result, setResult] = useState<MergeResult | null>(null);
@@ -27,25 +31,62 @@ export default function App() {
   const [currentContext, setCurrentContext] = useState<string>("");
   const [selectedContext, setSelectedContext] = useState<string>("");
   const [allContexts, setAllContexts] = useState<string[]>([]);
+  const [dropdownOpen, setDropdownOpen] = useState<boolean>(false);
+  const [targetKind, setTargetKind] = useState<TargetKind>("windows");
+  const [wslDistro, setWslDistro] = useState<string>("Ubuntu-24.04");
+  const [linuxUser, setLinuxUser] = useState<string>("vj");
+  const [targetPath, setTargetPath] = useState<string>("");
+  const [wslDistros, setWslDistros] = useState<string[]>([]);
+  const [contextFilter, setContextFilter] = useState<string>("");
 
   const canMerge = useMemo(() => filePath.length > 0 && !busy, [filePath, busy]);
 
-  useEffect(() => {
-    async function loadContexts() {
-      try {
-        const contexts = (await GetAllContexts()) as string[];
-        setAllContexts(contexts);
+  async function loadFromTarget(kind: TargetKind, distro: string, user: string) {
+    try {
+      const path = await ResolveTargetKubeconfig({
+      kind,
+      distro: distro.trim(),
+      linuxUser: user.trim(),
+}     as any);
 
-        const current = await GetCurrentContext();
-        setCurrentContext(current);
-        setSelectedContext(current);
+      setTargetPath(path);
 
-        setStatus("Loaded kubeconfig contexts.");
-      } catch {
-        setStatus("Could not load kubeconfig contexts.");
-      }
+      const contexts = (await GetAllContextsForPath(path)) as string[];
+      setAllContexts(contexts);
+
+      const current = (await GetCurrentContextForPath(path)) as string;
+      setCurrentContext(current);
+      setSelectedContext(current);
+
+      setStatus(`Loaded target: ${kind.toUpperCase()} (${path})`);
+    } catch (e: any) {
+      setStatus(`Target load failed: ${e?.message ?? String(e)}`);
     }
-    loadContexts();
+  }
+
+  // Startup: load WSL distro list (on Windows) and load default target
+  useEffect(() => {
+    async function init() {
+      // Try list WSL distros; on non-windows builds this returns an error
+//      try {
+//        const distros = (await ListWSLDistros()) as string[];
+//        if (Array.isArray(distros) && distros.length > 0) {
+//          setWslDistros(distros);
+//          // Keep your default if it exists; otherwise pick first
+//          if (!distros.includes(wslDistro)) {
+//            setWslDistro(distros[0]);
+//          }
+//        }
+//      } catch {
+//        // ignore
+//      }
+//
+      // Load contexts immediately from the selected target
+      await loadFromTarget(targetKind, wslDistro, linuxUser);
+    }
+
+    init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function runMerge() {
@@ -59,12 +100,8 @@ export default function App() {
       setResult(res);
       setStatus(res.message);
 
-      const ctx = await GetCurrentContext();
-      setCurrentContext(ctx);
-      setSelectedContext(ctx);
-
-      const updated = (await GetAllContexts()) as string[];
-      setAllContexts(updated);
+      // After merge, reload the currently selected target (Windows or WSL)
+      await loadFromTarget(targetKind, wslDistro, linuxUser);
     } catch (e: any) {
       setStatus(`Error: ${e?.message ?? String(e)}`);
     } finally {
@@ -76,13 +113,18 @@ export default function App() {
     if (!selectedContext) return;
 
     try {
-      await SwitchContext(selectedContext);
+      if (!targetPath) {
+        setStatus("Target not loaded. Click Load Target.");
+        return;
+      }
 
-      const ctx = await GetCurrentContext();
+      await SwitchContextForPath(targetPath, selectedContext);
+
+      const ctx = (await GetCurrentContextForPath(targetPath)) as string;
       setCurrentContext(ctx);
       setSelectedContext(ctx);
 
-      const updated = (await GetAllContexts()) as string[];
+      const updated = (await GetAllContextsForPath(targetPath)) as string[];
       setAllContexts(updated);
 
       setStatus(`Switched to: ${ctx}`);
@@ -90,6 +132,11 @@ export default function App() {
       setStatus(`Error switching context: ${e?.message ?? String(e)}`);
     }
   }
+  const filteredContexts = useMemo(() => {
+  const q = contextFilter.trim().toLowerCase();
+  if (!q) return allContexts;
+  return allContexts.filter((c) => c.toLowerCase().includes(q));
+}, [allContexts, contextFilter]);
 
   return (
     <div className="container">
@@ -97,7 +144,8 @@ export default function App() {
         <div>
           <h1>KubeMerge GUI</h1>
           <p className="subtitle">
-            Merge kubeconfigs safely + switch contexts like <code>kubectx</code>
+            Merge kubeconfigs safely + switch contexts (Windows / WSL) like{" "}
+            <code>kubectx</code>
           </p>
         </div>
         <div className="badge">
@@ -130,7 +178,7 @@ export default function App() {
             </button>
 
             <button className="btnPrimary" disabled={!canMerge} onClick={runMerge}>
-              {busy ? "Merging..." : "Merge into ~/.kube/config"}
+              {busy ? "Merging..." : "Merge into default kubeconfig"}
             </button>
           </div>
 
@@ -162,23 +210,117 @@ export default function App() {
           )}
         </div>
 
-        {/* RIGHT: Context */}
+        {/* RIGHT: Target + Context */}
         <div className="card">
-          <h2>Context selector</h2>
+          <h2>Target & Context</h2>
 
-          <div className="label">Switch context</div>
-          <div className="row">
-            <select
-              value={selectedContext}
-              onChange={(e) => setSelectedContext(e.target.value)}
+          <div className="label">Target</div>
+          <div className="row" style={{ marginBottom: "10px" }}>
+            <label style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+              <input
+                type="radio"
+                checked={targetKind === "windows"}
+                onChange={() => setTargetKind("windows")}
+              />
+              Windows
+            </label>
+
+            <label style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+              <input
+                type="radio"
+                checked={targetKind === "wsl"}
+                onChange={() => setTargetKind("wsl")}
+              />
+              WSL
+            </label>
+          </div>
+
+          {targetKind === "wsl" && (
+            <>
+              <div className="label">WSL distro</div>
+              <div className="row" style={{ marginBottom: "10px" }}>
+                <select value={wslDistro} onChange={(e) => setWslDistro(e.target.value)}>
+                  {/* Prefer discovered distros; fallback to default */}
+                  {["Ubuntu-24.04"].map((d) => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="label">Linux username (inside WSL)</div>
+              <div className="row" style={{ marginBottom: "10px" }}>
+                <input
+                  style={{
+                    border: "1px solid rgba(255,255,255,0.12)",
+                    background: "rgba(255,255,255,0.06)",
+                    color: "rgba(255,255,255,0.92)",
+                    borderRadius: "12px",
+                    padding: "10px 12px",
+                  }}
+                  value={linuxUser}
+                  onChange={(e) => setLinuxUser(e.target.value)}
+                  placeholder="e.g. vj"
+                />
+              </div>
+            </>
+          )}
+
+          <div className="row" style={{ marginBottom: "10px" }}>
+            <button
+              className="btnGhost"
+              onClick={async () => {
+                await loadFromTarget(targetKind, wslDistro, linuxUser);
+              }}
             >
-              <option value="">Select context</option>
-              {allContexts.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
+              Load Target
+            </button>
+          </div>
+
+          <div className="label">Resolved kubeconfig path</div>
+          <div className="pathbox">{targetPath || "(not loaded yet)"}</div>
+          <div className="sectionTitle">Search</div>
+          <input
+            style={{
+              width: "100%",
+              border: "1px solid rgba(255,255,255,0.12)",
+              background: "rgba(255,255,255,0.06)",
+              color: "rgba(255,255,255,0.92)",
+              borderRadius: "12px",
+              padding: "10px 12px",
+              marginBottom: "10px",
+            }}
+            value={contextFilter}
+            onChange={(e) => setContextFilter(e.target.value)}
+            placeholder="Type to filter contexts (e.g., aks, prod, dev...)"
+          />
+
+          <div className="sectionTitle">Switch context</div>
+          <div className="row">
+            <div className="dropdown">
+              <div
+                className="dropdownSelected"
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+              >
+                {selectedContext || "Select context"}
+              </div>
+                        
+              {dropdownOpen && (
+                <div className="dropdownMenu">
+                  {filteredContexts.map((c) => (
+                    <div
+                      key={c}
+                      className={`dropdownItem ${c === currentContext ? "active" : ""}`}
+                      onClick={() => {
+                        setSelectedContext(c);
+                        setDropdownOpen(false);
+                      }}
+                    >
+                      {c}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
             <button
               className="btnPrimary"
@@ -191,7 +333,7 @@ export default function App() {
 
           <div className="sectionTitle">Contexts</div>
           <ul className="list">
-            {allContexts.slice(0, 12).map((c) => (
+            {filteredContexts.slice(0, 12).map((c) => (
               <li key={c}>
                 {c === currentContext ? (
                   <b>
@@ -202,7 +344,7 @@ export default function App() {
                 )}
               </li>
             ))}
-            {allContexts.length > 12 && <li>…and {allContexts.length - 12} more</li>}
+            {filteredContexts.length > 12 && <li>…and {filteredContexts.length - 12} more</li>}
           </ul>
         </div>
       </div>

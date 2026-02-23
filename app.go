@@ -198,3 +198,74 @@ func (a *App) GetAllContexts() ([]string, error) {
 	sort.Strings(contexts)
 	return contexts, nil
 }
+
+// ---- Target selection (Windows/WSL) ----
+
+type TargetSelection struct {
+	Kind      string `json:"kind"`      // "windows" or "wsl"
+	Distro    string `json:"distro"`    // e.g. "Ubuntu-24.04"
+	LinuxUser string `json:"linuxUser"` // e.g. "vj"
+}
+
+func (a *App) ListWSLDistros() ([]string, error) {
+	return listWSLDistros()
+}
+
+func (a *App) ResolveTargetKubeconfig(sel TargetSelection) (string, error) {
+	switch sel.Kind {
+	case "windows":
+		return windowsKubeconfigPath()
+	case "wsl":
+		return wslKubeconfigUNC(sel.Distro, sel.LinuxUser)
+	default:
+		return "", fmt.Errorf("unknown target kind: %s", sel.Kind)
+	}
+}
+
+// ---- Path-based context APIs ----
+
+func (a *App) GetAllContextsForPath(kubeconfigPath string) ([]string, error) {
+	// 1) Validate path exists first
+	if _, err := os.Stat(kubeconfigPath); err != nil {
+		return nil, fmt.Errorf("kubeconfig not found at %s: %v", kubeconfigPath, err)
+	}
+
+	// 2) Now load kubeconfig
+	cfg, err := clientcmd.LoadFromFile(kubeconfigPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load kubeconfig %s: %v", kubeconfigPath, err)
+	}
+
+	// 3) Collect contexts
+	contexts := []string{}
+	for name := range cfg.Contexts {
+		contexts = append(contexts, name)
+	}
+
+	// Optional: sort here if you want:
+	// sort.Strings(contexts)
+
+	return contexts, nil
+}
+
+func (a *App) GetCurrentContextForPath(kubeconfigPath string) (string, error) {
+	cfg, err := clientcmd.LoadFromFile(kubeconfigPath)
+	if err != nil {
+		return "", err
+	}
+	return cfg.CurrentContext, nil
+}
+
+func (a *App) SwitchContextForPath(kubeconfigPath, name string) error {
+	cfg, err := clientcmd.LoadFromFile(kubeconfigPath)
+	if err != nil {
+		return err
+	}
+
+	if _, exists := cfg.Contexts[name]; !exists {
+		return fmt.Errorf("context does not exist: %s", name)
+	}
+
+	cfg.CurrentContext = name
+	return clientcmd.WriteToFile(*cfg, kubeconfigPath)
+}
