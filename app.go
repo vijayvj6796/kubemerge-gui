@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	goruntime "runtime"
 	"sort"
 	"time"
 
@@ -199,12 +200,16 @@ func (a *App) GetAllContexts() ([]string, error) {
 	return contexts, nil
 }
 
-// ---- Target selection (Windows/WSL) ----
+// ---- Target selection (Windows/WSL/Linux) ----
 
 type TargetSelection struct {
-	Kind      string `json:"kind"`      // "windows" or "wsl"
-	Distro    string `json:"distro"`    // e.g. "Ubuntu-24.04"
-	LinuxUser string `json:"linuxUser"` // e.g. "vj"
+	Kind      string `json:"kind"`      // "windows", "wsl", or "linux"
+	Distro    string `json:"distro"`    // e.g. "Ubuntu-24.04" (for WSL)
+	LinuxUser string `json:"linuxUser"` // e.g. "vj" (for WSL)
+}
+
+func (a *App) GetOS() string {
+	return goruntime.GOOS
 }
 
 func (a *App) ListWSLDistros() ([]string, error) {
@@ -217,6 +222,8 @@ func (a *App) ResolveTargetKubeconfig(sel TargetSelection) (string, error) {
 		return windowsKubeconfigPath()
 	case "wsl":
 		return wslKubeconfigUNC(sel.Distro, sel.LinuxUser)
+	case "linux":
+		return linuxKubeconfigPath()
 	default:
 		return "", fmt.Errorf("unknown target kind: %s", sel.Kind)
 	}
@@ -268,4 +275,19 @@ func (a *App) SwitchContextForPath(kubeconfigPath, name string) error {
 
 	cfg.CurrentContext = name
 	return clientcmd.WriteToFile(*cfg, kubeconfigPath)
+}
+
+func (a *App) GetDefaultWSLUser(distro string) (string, error) {
+	return getDefaultWSLUser(distro)
+}
+
+func (a *App) TestFileExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, err
 }

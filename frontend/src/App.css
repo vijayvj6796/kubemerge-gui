@@ -208,3 +208,102 @@ code {
 .dropdownItem.active {
   background: rgba(59, 130, 246, 0.22);
 }
+
+.ctxdd {
+  position: relative;
+  width: 100%;
+}
+
+.ctxdd__trigger {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.04);
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+.ctxdd__caret {
+  opacity: 0.8;
+}
+
+.ctxdd__panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(15, 20, 35, 0.98);
+  overflow: hidden;
+  z-index: 50;
+}
+
+.ctxdd__search {
+  position: sticky;
+  top: 0;
+  padding: 10px;
+  background: rgba(15, 20, 35, 0.98);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.ctxdd__search input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.04);
+  color: #fff;
+  outline: none;
+}
+
+.ctxdd__list {
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.ctxdd__item {
+  width: 100%;
+  text-align: left;
+  padding: 14px 16px;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+}
+
+.ctxdd__item:hover {
+  background: rgba(255,255,255,0.06);
+}
+
+.ctxdd__item.is-selected {
+  background: rgba(80, 130, 255, 0.22);
+}
+
+.ctxdd__empty {
+  padding: 14px 16px;
+  opacity: 0.75;
+}
+
+.dropdownSearch {
+  padding: 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.dropdownSearch input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.05);
+  color: white;
+  outline: none;
+}
+
+.dropdownSearch input::placeholder {
+  color: rgba(255,255,255,0.5);
+}

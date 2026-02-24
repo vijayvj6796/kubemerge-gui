@@ -8,7 +8,11 @@ import {
   GetAllContextsForPath,
   GetCurrentContextForPath,
   SwitchContextForPath,
+  GetDefaultWSLUser,
+  TestFileExists,
+  GetOS,
 } from "../wailsjs/go/main/App";
+import ContextDropdown from "./components/ContextDropdown";
 
 type MergeResult = {
   targetConfigPath: string;
@@ -20,7 +24,7 @@ type MergeResult = {
   message: string;
 };
 
-type TargetKind = "windows" | "wsl";
+type TargetKind = "windows" | "wsl" | "linux";
 
 export default function App() {
   const [filePath, setFilePath] = useState<string>("");
@@ -32,24 +36,64 @@ export default function App() {
   const [selectedContext, setSelectedContext] = useState<string>("");
   const [allContexts, setAllContexts] = useState<string[]>([]);
   const [dropdownOpen, setDropdownOpen] = useState<boolean>(false);
-  const [targetKind, setTargetKind] = useState<TargetKind>("windows");
-  const [wslDistro, setWslDistro] = useState<string>("Ubuntu-24.04");
-  const [linuxUser, setLinuxUser] = useState<string>("vj");
+  const [os, setOs] = useState<string>("");
+  const [targetKind, setTargetKind] = useState<TargetKind>("linux");
+  const [wslDistro, setWslDistro] = useState<string>("");
+  const [linuxUser, setLinuxUser] = useState<string>("");
   const [targetPath, setTargetPath] = useState<string>("");
   const [wslDistros, setWslDistros] = useState<string[]>([]);
-  const [contextFilter, setContextFilter] = useState<string>("");
+  // Remove contextFilter, use only searchTerm for dropdown search
+  const [searchTerm, setSearchTerm] = useState("");
 
   const canMerge = useMemo(() => filePath.length > 0 && !busy, [filePath, busy]);
 
+  // Detect OS on mount
+  useEffect(() => {
+    async function detectOS() {
+      try {
+        const detectedOS = await GetOS();
+        setOs(detectedOS);
+        // Auto-select appropriate default target
+        if (detectedOS === "windows") {
+          setTargetKind("windows");
+        } else {
+          setTargetKind("linux");
+        }
+      } catch (e: any) {
+        setStatus(`Failed to detect OS: ${e?.message ?? String(e)}`);
+      }
+    }
+    detectOS();
+  }, []);
+
   async function loadFromTarget(kind: TargetKind, distro: string, user: string) {
     try {
+      // Validate inputs for WSL
+      if (kind === "wsl") {
+        if (!distro.trim()) {
+          setStatus("Error: WSL distro is required");
+          return;
+        }
+        if (!user.trim()) {
+          setStatus("Error: Linux username is required");
+          return;
+        }
+      }
+
       const path = await ResolveTargetKubeconfig({
-      kind,
-      distro: distro.trim(),
-      linuxUser: user.trim(),
-}     as any);
+        kind,
+        distro: distro.trim(),
+        linuxUser: user.trim(),
+      } as any);
 
       setTargetPath(path);
+      setStatus(`Resolved path: ${path}. Checking if file exists...`);
+
+      const ok = await TestFileExists(path);
+      if (!ok) {
+        setStatus(`Target load failed: kubeconfig not found at ${path}`);
+        return;
+      }
 
       const contexts = (await GetAllContextsForPath(path)) as string[];
       setAllContexts(contexts);
@@ -58,36 +102,50 @@ export default function App() {
       setCurrentContext(current);
       setSelectedContext(current);
 
-      setStatus(`Loaded target: ${kind.toUpperCase()} (${path})`);
+      setStatus(`Loaded target: ${kind.toUpperCase()} (${contexts.length} contexts found)`);
     } catch (e: any) {
       setStatus(`Target load failed: ${e?.message ?? String(e)}`);
     }
   }
 
-  // Startup: load WSL distro list (on Windows) and load default target
+  // On mount or when WSL is selected, load WSL distros and auto-select first
   useEffect(() => {
-    async function init() {
-      // Try list WSL distros; on non-windows builds this returns an error
-//      try {
-//        const distros = (await ListWSLDistros()) as string[];
-//        if (Array.isArray(distros) && distros.length > 0) {
-//          setWslDistros(distros);
-//          // Keep your default if it exists; otherwise pick first
-//          if (!distros.includes(wslDistro)) {
-//            setWslDistro(distros[0]);
-//          }
-//        }
-//      } catch {
-//        // ignore
-//      }
-//
-      // Load contexts immediately from the selected target
-      await loadFromTarget(targetKind, wslDistro, linuxUser);
+    async function loadWSLDistros() {
+      if (targetKind !== "wsl") return;
+      try {
+        const distros = await ListWSLDistros();
+        if (Array.isArray(distros) && distros.length > 0) {
+          setWslDistros(distros);
+          setWslDistro((prev) => prev || distros[0]);
+        } else {
+          setWslDistros(["Ubuntu"]);
+          setWslDistro((prev) => prev || "Ubuntu");
+        }
+      } catch {
+        setWslDistros(["Ubuntu"]);
+        setWslDistro((prev) => prev || "Ubuntu");
+      }
     }
+    loadWSLDistros();
+  }, [targetKind]);
 
-    init();
+  // When WSL distro changes, auto-detect default user
+  useEffect(() => {
+    async function autoUser() {
+      if (targetKind !== "wsl" || !wslDistro) return;
+      try {
+        const u = await GetDefaultWSLUser(wslDistro);
+        if (u && typeof u === "string") {
+          setLinuxUser(u);
+          setStatus(`Auto-detected username for ${wslDistro}: ${u}`);
+        }
+      } catch (e: any) {
+        setStatus(`Could not auto-detect username for ${wslDistro}. Please enter manually.`);
+      }
+    }
+    autoUser();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [targetKind, wslDistro]);
 
   async function runMerge() {
     if (!filePath) return;
@@ -132,11 +190,12 @@ export default function App() {
       setStatus(`Error switching context: ${e?.message ?? String(e)}`);
     }
   }
+  // Filtered contexts for dropdown, using searchTerm
   const filteredContexts = useMemo(() => {
-  const q = contextFilter.trim().toLowerCase();
-  if (!q) return allContexts;
-  return allContexts.filter((c) => c.toLowerCase().includes(q));
-}, [allContexts, contextFilter]);
+    const q = searchTerm.trim().toLowerCase();
+    if (!q) return allContexts;
+    return allContexts.filter((c) => c.toLowerCase().includes(q));
+  }, [allContexts, searchTerm]);
 
   return (
     <div className="container">
@@ -216,32 +275,49 @@ export default function App() {
 
           <div className="label">Target</div>
           <div className="row" style={{ marginBottom: "10px" }}>
-            <label style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-              <input
-                type="radio"
-                checked={targetKind === "windows"}
-                onChange={() => setTargetKind("windows")}
-              />
-              Windows
-            </label>
+            {os === "windows" ? (
+              <>
+                <label style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                  <input
+                    type="radio"
+                    checked={targetKind === "windows"}
+                    onChange={() => setTargetKind("windows")}
+                  />
+                  Windows
+                </label>
 
-            <label style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-              <input
-                type="radio"
-                checked={targetKind === "wsl"}
-                onChange={() => setTargetKind("wsl")}
-              />
-              WSL
-            </label>
+                <label style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                  <input
+                    type="radio"
+                    checked={targetKind === "wsl"}
+                    onChange={() => setTargetKind("wsl")}
+                  />
+                  WSL
+                </label>
+              </>
+            ) : (
+              <label style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                <input
+                  type="radio"
+                  checked={targetKind === "linux"}
+                  onChange={() => setTargetKind("linux")}
+                />
+                Linux (~/.kube/config)
+              </label>
+            )}
           </div>
 
           {targetKind === "wsl" && (
             <>
               <div className="label">WSL distro</div>
               <div className="row" style={{ marginBottom: "10px" }}>
-                <select value={wslDistro} onChange={(e) => setWslDistro(e.target.value)}>
-                  {/* Prefer discovered distros; fallback to default */}
-                  {["Ubuntu-24.04"].map((d) => (
+                <select
+                  value={wslDistro}
+                  onChange={(e) => {
+                    setWslDistro(e.target.value);
+                  }}
+                >
+                  {wslDistros.map((d) => (
                     <option key={d} value={d}>{d}</option>
                   ))}
                 </select>
@@ -262,6 +338,17 @@ export default function App() {
                   placeholder="e.g. vj"
                 />
               </div>
+
+              {wslDistro && linuxUser && (
+                <div style={{ 
+                  fontSize: "11px", 
+                  color: "rgba(255,255,255,0.6)", 
+                  marginBottom: "10px",
+                  fontFamily: "monospace"
+                }}>
+                  Will use: \\wsl$\{wslDistro}\home\{linuxUser}\.kube\config
+                </div>
+              )}
             </>
           )}
 
@@ -278,21 +365,7 @@ export default function App() {
 
           <div className="label">Resolved kubeconfig path</div>
           <div className="pathbox">{targetPath || "(not loaded yet)"}</div>
-          <div className="sectionTitle">Search</div>
-          <input
-            style={{
-              width: "100%",
-              border: "1px solid rgba(255,255,255,0.12)",
-              background: "rgba(255,255,255,0.06)",
-              color: "rgba(255,255,255,0.92)",
-              borderRadius: "12px",
-              padding: "10px 12px",
-              marginBottom: "10px",
-            }}
-            value={contextFilter}
-            onChange={(e) => setContextFilter(e.target.value)}
-            placeholder="Type to filter contexts (e.g., aks, prod, dev...)"
-          />
+
 
           <div className="sectionTitle">Switch context</div>
           <div className="row">
@@ -304,22 +377,36 @@ export default function App() {
                 {selectedContext || "Select context"}
               </div>
                         
-              {dropdownOpen && (
-                <div className="dropdownMenu">
-                  {filteredContexts.map((c) => (
-                    <div
-                      key={c}
-                      className={`dropdownItem ${c === currentContext ? "active" : ""}`}
-                      onClick={() => {
-                        setSelectedContext(c);
-                        setDropdownOpen(false);
-                      }}
-                    >
-                      {c}
+                {dropdownOpen && (
+                  <div className="dropdownMenu">
+                    {/* 🔍 Search inside dropdown */}
+                    <div className="dropdownSearch">
+                      <input
+                        type="text"
+                        placeholder="Search contexts..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        autoFocus
+                      />
                     </div>
-                  ))}
-                </div>
-              )}
+                    {filteredContexts.length === 0 && (
+                      <div className="dropdownItem">No contexts found</div>
+                    )}
+                    {filteredContexts.map((c) => (
+                      <div
+                        key={c}
+                        className={`dropdownItem ${c === currentContext ? "active" : ""}`}
+                        onClick={() => {
+                          setSelectedContext(c);
+                          setDropdownOpen(false);
+                          setSearchTerm("");
+                        }}
+                      >
+                        {c}
+                      </div>
+                    ))}
+                  </div>
+                )}
             </div>
 
             <button
@@ -333,7 +420,7 @@ export default function App() {
 
           <div className="sectionTitle">Contexts</div>
           <ul className="list">
-            {filteredContexts.slice(0, 12).map((c) => (
+            {allContexts.slice(0, 12).map((c) => (
               <li key={c}>
                 {c === currentContext ? (
                   <b>
@@ -344,7 +431,7 @@ export default function App() {
                 )}
               </li>
             ))}
-            {filteredContexts.length > 12 && <li>…and {filteredContexts.length - 12} more</li>}
+            {allContexts.length > 12 && <li>…and {allContexts.length - 12} more</li>}
           </ul>
         </div>
       </div>

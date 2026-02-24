@@ -18,6 +18,14 @@ export function GetCurrentContextForPath(arg1) {
   return window['go']['main']['App']['GetCurrentContextForPath'](arg1);
 }
 
+export function GetDefaultWSLUser(arg1) {
+  return window['go']['main']['App']['GetDefaultWSLUser'](arg1);
+}
+
+export function GetOS() {
+  return window['go']['main']['App']['GetOS']();
+}
+
 export function ListWSLDistros() {
   return window['go']['main']['App']['ListWSLDistros']();
 }
@@ -40,4 +48,8 @@ export function SwitchContext(arg1) {
 
 export function SwitchContextForPath(arg1, arg2) {
   return window['go']['main']['App']['SwitchContextForPath'](arg1, arg2);
+}
+
+export function TestFileExists(arg1) {
+  return window['go']['main']['App']['TestFileExists'](arg1);
 }

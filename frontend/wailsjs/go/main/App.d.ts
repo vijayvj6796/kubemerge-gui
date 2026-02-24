@@ -10,6 +10,10 @@ export function GetCurrentContext():Promise<string>;
 
 export function GetCurrentContextForPath(arg1:string):Promise<string>;
 
+export function GetDefaultWSLUser(arg1:string):Promise<string>;
+
+export function GetOS():Promise<string>;
+
 export function ListWSLDistros():Promise<Array<string>>;
 
 export function MergeIntoDefault(arg1:string):Promise<main.MergeResult>;
@@ -21,3 +25,5 @@ export function SelectKubeconfig():Promise<string>;
 export function SwitchContext(arg1:string):Promise<void>;
 
 export function SwitchContextForPath(arg1:string,arg2:string):Promise<void>;
+
+export function TestFileExists(arg1:string):Promise<boolean>;
