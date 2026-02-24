@@ -15,6 +15,61 @@ import (
 	"k8s.io/client-go/util/homedir"
 )
 
+// Delete a context from the default kubeconfig (~/.kube/config)
+func (a *App) DeleteContext(name string) error {
+	home := homedir.HomeDir()
+	path := filepath.Join(home, ".kube", "config")
+	return deleteContextFromFile(path, name)
+}
+
+// Delete a context from a specific kubeconfig file
+func (a *App) DeleteContextForPath(kubeconfigPath, name string) error {
+	return deleteContextFromFile(kubeconfigPath, name)
+}
+
+// Helper: Remove context, and optionally its user/cluster if unused
+func deleteContextFromFile(path, name string) error {
+	cfg, err := clientcmd.LoadFromFile(path)
+	if err != nil {
+		return err
+	}
+	ctx, exists := cfg.Contexts[name]
+	if !exists {
+		return fmt.Errorf("context '%s' does not exist", name)
+	}
+	// Remove context
+	delete(cfg.Contexts, name)
+	// Remove user if not used by any other context
+	user := ctx.AuthInfo
+	stillUsed := false
+	for _, c := range cfg.Contexts {
+		if c.AuthInfo == user {
+			stillUsed = true
+			break
+		}
+	}
+	if !stillUsed {
+		delete(cfg.AuthInfos, user)
+	}
+	// Remove cluster if not used by any other context
+	cluster := ctx.Cluster
+	stillUsed = false
+	for _, c := range cfg.Contexts {
+		if c.Cluster == cluster {
+			stillUsed = true
+			break
+		}
+	}
+	if !stillUsed {
+		delete(cfg.Clusters, cluster)
+	}
+	// If current context was deleted, unset it
+	if cfg.CurrentContext == name {
+		cfg.CurrentContext = ""
+	}
+	return clientcmd.WriteToFile(*cfg, path)
+}
+
 type App struct {
 	ctx context.Context
 }
@@ -55,27 +110,20 @@ type MergeResult struct {
 	Message          string   `json:"message"`
 }
 
-func (a *App) MergeIntoDefault(newKubeconfigPath string) (*MergeResult, error) {
-
-	home := homedir.HomeDir()
-	if home == "" {
-		return nil, fmt.Errorf("cannot detect home directory")
-	}
-
-	target := filepath.Join(home, ".kube", "config")
-
+// Merge newKubeconfigPath into targetKubeconfigPath
+func (a *App) MergeIntoTarget(targetKubeconfigPath, newKubeconfigPath string) (*MergeResult, error) {
 	// Ensure directory exists
-	if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(targetKubeconfigPath), 0755); err != nil {
 		return nil, err
 	}
 
 	// Backup existing config if exists
 	var backupPath string
-	if _, err := os.Stat(target); err == nil {
+	if _, err := os.Stat(targetKubeconfigPath); err == nil {
 		ts := time.Now().Format("20060102_150405")
-		backupPath = target + ".bak-" + ts
+		backupPath = targetKubeconfigPath + ".bak-" + ts
 
-		data, err := os.ReadFile(target)
+		data, err := os.ReadFile(targetKubeconfigPath)
 		if err != nil {
 			return nil, err
 		}
@@ -86,8 +134,8 @@ func (a *App) MergeIntoDefault(newKubeconfigPath string) (*MergeResult, error) {
 
 	// Load existing config (if exists)
 	var oldConfig *clientcmdapi.Config
-	if _, err := os.Stat(target); err == nil {
-		oldConfig, err = clientcmd.LoadFromFile(target)
+	if _, err := os.Stat(targetKubeconfigPath); err == nil {
+		oldConfig, err = clientcmd.LoadFromFile(targetKubeconfigPath)
 		if err != nil {
 			return nil, err
 		}
@@ -130,7 +178,7 @@ func (a *App) MergeIntoDefault(newKubeconfigPath string) (*MergeResult, error) {
 	}
 
 	// Write merged config
-	if err := clientcmd.WriteToFile(*oldConfig, target); err != nil {
+	if err := clientcmd.WriteToFile(*oldConfig, targetKubeconfigPath); err != nil {
 		return nil, err
 	}
 
@@ -140,7 +188,7 @@ func (a *App) MergeIntoDefault(newKubeconfigPath string) (*MergeResult, error) {
 	}
 
 	return &MergeResult{
-		TargetConfigPath: target,
+		TargetConfigPath: targetKubeconfigPath,
 		BackupPath:       backupPath,
 		AddedClusters:    addedClusters,
 		AddedContexts:    addedContexts,
@@ -148,6 +196,16 @@ func (a *App) MergeIntoDefault(newKubeconfigPath string) (*MergeResult, error) {
 		AllContexts:      allContexts,
 		Message:          "Merge completed successfully.",
 	}, nil
+}
+
+// For backward compatibility, keep this method but call the new one with the default path
+func (a *App) MergeIntoDefault(newKubeconfigPath string) (*MergeResult, error) {
+	home := homedir.HomeDir()
+	if home == "" {
+		return nil, fmt.Errorf("cannot detect home directory")
+	}
+	target := filepath.Join(home, ".kube", "config")
+	return a.MergeIntoTarget(target, newKubeconfigPath)
 }
 
 func (a *App) GetCurrentContext() (string, error) {

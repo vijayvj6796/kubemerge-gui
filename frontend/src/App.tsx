@@ -3,6 +3,7 @@ import "./App.css";
 import {
   SelectKubeconfig,
   MergeIntoDefault,
+  MergeIntoTarget,
   ListWSLDistros,
   ResolveTargetKubeconfig,
   GetAllContextsForPath,
@@ -11,6 +12,7 @@ import {
   GetDefaultWSLUser,
   TestFileExists,
   GetOS,
+  DeleteContextForPath,
 } from "../wailsjs/go/main/App";
 import ContextDropdown from "./components/ContextDropdown";
 
@@ -56,8 +58,10 @@ export default function App() {
         // Auto-select appropriate default target
         if (detectedOS === "windows") {
           setTargetKind("windows");
+          setStatus(`Running on Windows. Select target: Windows or WSL.`);
         } else {
           setTargetKind("linux");
+          setStatus(`Running on ${detectedOS}. Using native Linux kubeconfig.`);
         }
       } catch (e: any) {
         setStatus(`Failed to detect OS: ${e?.message ?? String(e)}`);
@@ -68,6 +72,9 @@ export default function App() {
 
   async function loadFromTarget(kind: TargetKind, distro: string, user: string) {
     try {
+      // Log what we're trying to load
+      console.log(`Loading target: kind=${kind}, distro=${distro}, user=${user}`);
+      
       // Validate inputs for WSL
       if (kind === "wsl") {
         if (!distro.trim()) {
@@ -86,6 +93,7 @@ export default function App() {
         linuxUser: user.trim(),
       } as any);
 
+      console.log(`Resolved path: ${path}`);
       setTargetPath(path);
       setStatus(`Resolved path: ${path}. Checking if file exists...`);
 
@@ -148,17 +156,17 @@ export default function App() {
   }, [targetKind, wslDistro]);
 
   async function runMerge() {
-    if (!filePath) return;
+    if (!filePath || !targetPath) return;
     setBusy(true);
     setStatus("Merging...");
     setResult(null);
 
     try {
-      const res = (await MergeIntoDefault(filePath)) as any;
+      const res = (await MergeIntoTarget(targetPath, filePath)) as any;
       setResult(res);
       setStatus(res.message);
 
-      // After merge, reload the currently selected target (Windows or WSL)
+      // After merge, reload the currently selected target (Windows, WSL, or Linux)
       await loadFromTarget(targetKind, wslDistro, linuxUser);
     } catch (e: any) {
       setStatus(`Error: ${e?.message ?? String(e)}`);
@@ -421,7 +429,7 @@ export default function App() {
           <div className="sectionTitle">Contexts</div>
           <ul className="list">
             {allContexts.slice(0, 12).map((c) => (
-              <li key={c}>
+              <li key={c} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 {c === currentContext ? (
                   <b>
                     <code>{c}</code>
@@ -429,6 +437,28 @@ export default function App() {
                 ) : (
                   <code>{c}</code>
                 )}
+                <button
+                  className="btnDanger"
+                  style={{ marginLeft: 8, fontSize: 12, padding: "2px 8px" }}
+                  title={`Delete context '${c}'`}
+                  onClick={async () => {
+                    if (!window.confirm(`Delete context '${c}'? This cannot be undone.`)) return;
+                    setStatus(`Deleting context '${c}'...`);
+                    try {
+                      await DeleteContextForPath(targetPath, c);
+                      setAllContexts((prev) => prev.filter((ctx) => ctx !== c));
+                      setStatus(`Deleted context '${c}'.`);
+                      if (currentContext === c) {
+                        setCurrentContext("");
+                        setSelectedContext("");
+                      }
+                    } catch (e: any) {
+                      setStatus(`Failed to delete context '${c}': ${e?.message ?? String(e)}`);
+                    }
+                  }}
+                >
+                  Delete
+                </button>
               </li>
             ))}
             {allContexts.length > 12 && <li>…and {allContexts.length - 12} more</li>}
