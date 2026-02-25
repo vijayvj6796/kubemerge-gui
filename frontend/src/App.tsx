@@ -465,6 +465,9 @@ export default function App() {
           </ul>
         </div>
       </div>
+      <footer style={{ textAlign: "center", padding: "20px", color: "#888", fontSize: "14px" }}>
+        Made with ❤️ by Cipheronic
+      </footer>
     </div>
   );
 }

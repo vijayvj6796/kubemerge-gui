@@ -137,3 +137,7 @@ You can restore manually if needed.
 - macOS release build
 
 ## 📜 License
+
+---
+
+Made with ❤️ by Cipheronic
