@@ -64,6 +64,10 @@ A lightweight desktop utility built with **Go + Wails** to:
 - Alphabetically sorted context list
 - Switch context with one click
 - Auto-load contexts on startup
+- **Namespace management (kubens-style)** - View, list, and switch default namespace for contexts
+- **Test cluster connectivity** - Check if cluster is reachable, view version, and verify authentication
+- **Keyboard shortcuts** - Quick context switching (Ctrl+K), namespace switching (Ctrl+N), merge (Ctrl+M), and search (Ctrl+F)
+- Delete contexts with cascade cleanup of unused users/clusters
 - Clean dark UI
 
 ---
@@ -128,13 +132,22 @@ Before merging, the app creates a backup:
 
 You can restore manually if needed.
 
+## ⌨️ Keyboard Shortcuts
+
+- **Ctrl+K** (Cmd+K on Mac) - Quick context switcher
+- **Ctrl+N** (Cmd+N on Mac) - Quick namespace switcher
+- **Ctrl+M** (Cmd+M on Mac) - Quick merge
+- **Ctrl+F** (Cmd+F on Mac) - Search contexts/namespaces
+- **Esc** - Close dropdown
+
 ## 🎯 Roadmap
 
 - Restore backup button
-- Search filter for contexts
-- Namespace switch (kubens style)
 - Multi-file merge
 - macOS release build
+- Context export/import
+- Context rename functionality
+- Certificate expiration warnings
 
 ## 📜 License
 

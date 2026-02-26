@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import "./App.css";
 import {
   SelectKubeconfig,
@@ -13,6 +13,11 @@ import {
   TestFileExists,
   GetOS,
   DeleteContextForPath,
+  TestClusterConnectivity,
+  GetClusterInfoForCurrentContext,
+  GetCurrentNamespaceForPath,
+  ListNamespacesForPath,
+  SetNamespaceForPath,
 } from "../wailsjs/go/main/App";
 import ContextDropdown from "./components/ContextDropdown";
 
@@ -24,6 +29,15 @@ type MergeResult = {
   addedUsers: string[];
   allContexts: string[];
   message: string;
+};
+
+type ClusterInfo = {
+  reachable: boolean;
+  version: string;
+  authenticated: boolean;
+  clusterName: string;
+  serverUrl: string;
+  errorMessage: string;
 };
 
 type TargetKind = "windows" | "wsl" | "linux";
@@ -46,6 +60,20 @@ export default function App() {
   const [wslDistros, setWslDistros] = useState<string[]>([]);
   // Remove contextFilter, use only searchTerm for dropdown search
   const [searchTerm, setSearchTerm] = useState("");
+  const [clusterInfo, setClusterInfo] = useState<ClusterInfo | null>(null);
+  const [testingCluster, setTestingCluster] = useState<boolean>(false);
+  
+  // Namespace management
+  const [currentNamespace, setCurrentNamespace] = useState<string>("default");
+  const [selectedNamespace, setSelectedNamespace] = useState<string>("default");
+  const [allNamespaces, setAllNamespaces] = useState<string[]>([]);
+  const [namespaceDropdownOpen, setNamespaceDropdownOpen] = useState<boolean>(false);
+  const [loadingNamespaces, setLoadingNamespaces] = useState<boolean>(false);
+  const [namespaceSearchTerm, setNamespaceSearchTerm] = useState("");
+  
+  // Refs for keyboard shortcuts
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const namespaceSearchInputRef = useRef<HTMLInputElement>(null);
 
   const canMerge = useMemo(() => filePath.length > 0 && !busy, [filePath, busy]);
 
@@ -69,6 +97,64 @@ export default function App() {
     }
     detectOS();
   }, []);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+K or Cmd+K - Quick context switcher (open dropdown and focus search)
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        setDropdownOpen(true);
+        setTimeout(() => searchInputRef.current?.focus(), 100);
+      }
+      
+      // Ctrl+N or Cmd+N - Quick namespace switcher
+      if ((e.ctrlKey || e.metaKey) && e.key === "n") {
+        e.preventDefault();
+        if (allNamespaces.length === 0) {
+          loadNamespaces();
+        }
+        setNamespaceDropdownOpen(true);
+        setTimeout(() => namespaceSearchInputRef.current?.focus(), 100);
+      }
+      
+      // Ctrl+M or Cmd+M - Quick merge
+      if ((e.ctrlKey || e.metaKey) && e.key === "m") {
+        e.preventDefault();
+        if (canMerge && !busy) {
+          runMerge();
+        }
+      }
+      
+      // Ctrl+F or Cmd+F - Focus search (when dropdown is open)
+      if ((e.ctrlKey || e.metaKey) && e.key === "f") {
+        e.preventDefault();
+        if (dropdownOpen) {
+          searchInputRef.current?.focus();
+        } else if (namespaceDropdownOpen) {
+          namespaceSearchInputRef.current?.focus();
+        } else {
+          setDropdownOpen(true);
+          setTimeout(() => searchInputRef.current?.focus(), 100);
+        }
+      }
+
+      // Escape - Close dropdown
+      if (e.key === "Escape") {
+        if (dropdownOpen) {
+          setDropdownOpen(false);
+          setSearchTerm("");
+        }
+        if (namespaceDropdownOpen) {
+          setNamespaceDropdownOpen(false);
+          setNamespaceSearchTerm("");
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [canMerge, busy, dropdownOpen, namespaceDropdownOpen, allNamespaces]);
 
   async function loadFromTarget(kind: TargetKind, distro: string, user: string) {
     try {
@@ -110,9 +196,50 @@ export default function App() {
       setCurrentContext(current);
       setSelectedContext(current);
 
+      // Load namespace for the current context
+      await loadNamespacesForContext(path, current);
+
       setStatus(`Loaded target: ${kind.toUpperCase()} (${contexts.length} contexts found)`);
     } catch (e: any) {
       setStatus(`Target load failed: ${e?.message ?? String(e)}`);
+    }
+  }
+
+  // Load namespaces for a specific context
+  async function loadNamespacesForContext(path: string, contextName: string) {
+    if (!path || !contextName) return;
+
+    try {
+      // Get current namespace for the context
+      const currentNs = await GetCurrentNamespaceForPath(path, contextName);
+      setCurrentNamespace(currentNs);
+      setSelectedNamespace(currentNs);
+    } catch (e: any) {
+      console.error("Failed to load current namespace:", e);
+      setCurrentNamespace("default");
+      setSelectedNamespace("default");
+    }
+  }
+
+  // Load all namespaces from the cluster for the current context
+  async function loadAllNamespaces() {
+    if (!targetPath || !currentContext) {
+      setStatus("No target loaded. Please load a target first.");
+      return;
+    }
+
+    setLoadingNamespaces(true);
+    setStatus("Loading namespaces from cluster...");
+
+    try {
+      const namespaces = await ListNamespacesForPath(targetPath, currentContext);
+      setAllNamespaces(namespaces);
+      setStatus(`Loaded ${namespaces.length} namespaces from cluster`);
+    } catch (e: any) {
+      setStatus(`Failed to load namespaces: ${e?.message ?? String(e)}`);
+      setAllNamespaces([]);
+    } finally {
+      setLoadingNamespaces(false);
     }
   }
 
@@ -193,17 +320,99 @@ export default function App() {
       const updated = (await GetAllContextsForPath(targetPath)) as string[];
       setAllContexts(updated);
 
+      // Load namespace for the new context
+      await loadNamespacesForContext(targetPath, ctx);
+
       setStatus(`Switched to: ${ctx}`);
     } catch (e: any) {
       setStatus(`Error switching context: ${e?.message ?? String(e)}`);
     }
   }
+
+  async function testClusterConnection() {
+    if (!targetPath || !currentContext) {
+      setStatus("No context selected. Load target first.");
+      return;
+    }
+
+    setTestingCluster(true);
+    setStatus("Testing cluster connectivity...");
+    setClusterInfo(null);
+
+    try {
+      const info = (await TestClusterConnectivity(targetPath, currentContext)) as ClusterInfo;
+      setClusterInfo(info);
+      if (info.reachable) {
+        setStatus(`✓ Cluster reachable! Version: ${info.version}`);
+      } else {
+        setStatus(`✗ Cluster unreachable: ${info.errorMessage}`);
+      }
+    } catch (e: any) {
+      setStatus(`Cluster test failed: ${e?.message ?? String(e)}`);
+      setClusterInfo({
+        reachable: false,
+        version: "",
+        authenticated: false,
+        clusterName: currentContext,
+        serverUrl: "",
+        errorMessage: e?.message ?? String(e),
+      });
+    } finally {
+      setTestingCluster(false);
+    }
+  }
+
+  async function loadNamespaces() {
+    if (!targetPath || !currentContext) {
+      setStatus("No context selected. Load target first.");
+      return;
+    }
+
+    setLoadingNamespaces(true);
+    setStatus("Loading namespaces...");
+
+    try {
+      const namespaces = (await ListNamespacesForPath(targetPath, currentContext)) as string[];
+      setAllNamespaces(namespaces);
+      
+      const currentNs = (await GetCurrentNamespaceForPath(targetPath, currentContext)) as string;
+      setCurrentNamespace(currentNs);
+      setSelectedNamespace(currentNs);
+      
+      setStatus(`Loaded ${namespaces.length} namespaces. Current: ${currentNs}`);
+    } catch (e: any) {
+      setStatus(`Failed to load namespaces: ${e?.message ?? String(e)}`);
+      setAllNamespaces([]);
+    } finally {
+      setLoadingNamespaces(false);
+    }
+  }
+
+  async function doSwitchNamespace() {
+    if (!selectedNamespace || !currentContext || !targetPath) return;
+
+    try {
+      await SetNamespaceForPath(targetPath, currentContext, selectedNamespace);
+      setCurrentNamespace(selectedNamespace);
+      setStatus(`Switched namespace to: ${selectedNamespace}`);
+    } catch (e: any) {
+      setStatus(`Error switching namespace: ${e?.message ?? String(e)}`);
+    }
+  }
+  
   // Filtered contexts for dropdown, using searchTerm
   const filteredContexts = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
     if (!q) return allContexts;
     return allContexts.filter((c) => c.toLowerCase().includes(q));
   }, [allContexts, searchTerm]);
+
+  // Filtered namespaces for dropdown
+  const filteredNamespaces = useMemo(() => {
+    const q = namespaceSearchTerm.trim().toLowerCase();
+    if (!q) return allNamespaces;
+    return allNamespaces.filter((ns) => ns.toLowerCase().includes(q));
+  }, [allNamespaces, namespaceSearchTerm]);
 
   return (
     <div className="container">
@@ -216,7 +425,8 @@ export default function App() {
           </p>
         </div>
         <div className="badge">
-          Current: <code>{currentContext || "(unknown)"}</code>
+          <div>Context: <code>{currentContext || "(unknown)"}</code></div>
+          <div style={{ marginTop: 4 }}>Namespace: <code>{currentNamespace || "default"}</code></div>
         </div>
       </div>
 
@@ -390,8 +600,9 @@ export default function App() {
                     {/* 🔍 Search inside dropdown */}
                     <div className="dropdownSearch">
                       <input
+                        ref={searchInputRef}
                         type="text"
-                        placeholder="Search contexts..."
+                        placeholder="Search contexts... (Ctrl+F)"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         autoFocus
@@ -421,6 +632,70 @@ export default function App() {
               className="btnPrimary"
               disabled={!selectedContext || selectedContext === currentContext}
               onClick={doSwitch}
+            >
+              Switch
+            </button>
+          </div>
+
+          {/* Namespace Switcher */}
+          <div className="sectionTitle" style={{ marginTop: "20px" }}>Switch namespace (kubens)</div>
+          <div style={{ marginBottom: "10px", fontSize: "13px", color: "#999" }}>
+            Current: <code>{currentNamespace}</code>
+          </div>
+          <div className="row">
+            <div className="dropdown">
+              <div
+                className="dropdownSelected"
+                onClick={() => {
+                  if (allNamespaces.length === 0) {
+                    loadNamespaces();
+                  }
+                  setNamespaceDropdownOpen(!namespaceDropdownOpen);
+                }}
+              >
+                {selectedNamespace || "Select namespace"}
+              </div>
+                        
+              {namespaceDropdownOpen && (
+                <div className="dropdownMenu">
+                  {/* 🔍 Search inside dropdown */}
+                  <div className="dropdownSearch">
+                    <input
+                      ref={namespaceSearchInputRef}
+                      type="text"
+                      placeholder="Search namespaces..."
+                      value={namespaceSearchTerm}
+                      onChange={(e) => setNamespaceSearchTerm(e.target.value)}
+                      autoFocus
+                    />
+                  </div>
+                  {loadingNamespaces && (
+                    <div className="dropdownItem">Loading namespaces...</div>
+                  )}
+                  {!loadingNamespaces && filteredNamespaces.length === 0 && (
+                    <div className="dropdownItem">No namespaces found</div>
+                  )}
+                  {!loadingNamespaces && filteredNamespaces.map((ns) => (
+                    <div
+                      key={ns}
+                      className={`dropdownItem ${ns === currentNamespace ? "active" : ""}`}
+                      onClick={() => {
+                        setSelectedNamespace(ns);
+                        setNamespaceDropdownOpen(false);
+                        setNamespaceSearchTerm("");
+                      }}
+                    >
+                      {ns}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <button
+              className="btnPrimary"
+              disabled={!selectedNamespace || selectedNamespace === currentNamespace || loadingNamespaces}
+              onClick={doSwitchNamespace}
             >
               Switch
             </button>
@@ -462,6 +737,64 @@ export default function App() {
               </li>
             ))}
             {allContexts.length > 12 && <li>…and {allContexts.length - 12} more</li>}
+          </ul>
+
+          {/* Cluster Connectivity Test */}
+          <div className="sectionTitle" style={{ marginTop: "20px" }}>Cluster Info</div>
+          <button
+            className="btnGhost"
+            disabled={!currentContext || testingCluster}
+            onClick={testClusterConnection}
+            style={{ width: "100%", marginBottom: "10px" }}
+          >
+            {testingCluster ? "Testing..." : "Test Cluster Connectivity"}
+          </button>
+
+          {clusterInfo && (
+            <div style={{ 
+              padding: "12px", 
+              backgroundColor: clusterInfo.reachable ? "#1a3a1a" : "#3a1a1a",
+              borderRadius: "6px",
+              fontSize: "13px"
+            }}>
+              <div style={{ marginBottom: "8px" }}>
+                <strong>Status:</strong>{" "}
+                <span style={{ color: clusterInfo.reachable ? "#4ade80" : "#f87171" }}>
+                  {clusterInfo.reachable ? "✓ Connected" : "✗ Unreachable"}
+                </span>
+              </div>
+              
+              {clusterInfo.reachable ? (
+                <>
+                  <div style={{ marginBottom: "6px" }}>
+                    <strong>Version:</strong> <code>{clusterInfo.version}</code>
+                  </div>
+                  <div style={{ marginBottom: "6px" }}>
+                    <strong>Auth:</strong>{" "}
+                    <span style={{ color: "#4ade80" }}>✓ Authenticated</span>
+                  </div>
+                  {clusterInfo.serverUrl && (
+                    <div style={{ marginBottom: "6px", wordBreak: "break-all" }}>
+                      <strong>Server:</strong> <code style={{ fontSize: "11px" }}>{clusterInfo.serverUrl}</code>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div style={{ color: "#f87171", fontSize: "12px" }}>
+                  {clusterInfo.errorMessage}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Keyboard Shortcuts Info */}
+          <div className="sectionTitle" style={{ marginTop: "20px" }}>⌨️ Shortcuts</div>
+          <ul className="list" style={{ fontSize: "12px", color: "#999" }}>
+            <li><code>Ctrl+K</code> - Quick context switcher</li>
+            <li><code>Ctrl+N</code> - Quick namespace switcher</li>
+            <li><code>Ctrl+M</code> - Quick merge</li>
+            <li><code>Ctrl+F</code> - Search contexts/namespaces</li>
+            <li><code>Esc</code> - Close dropdown</li>
           </ul>
         </div>
       </div>

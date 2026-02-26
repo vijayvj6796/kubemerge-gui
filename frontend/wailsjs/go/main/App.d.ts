@@ -10,13 +10,23 @@ export function GetAllContexts():Promise<Array<string>>;
 
 export function GetAllContextsForPath(arg1:string):Promise<Array<string>>;
 
+export function GetClusterInfoForCurrentContext(arg1:string):Promise<main.ClusterInfo>;
+
 export function GetCurrentContext():Promise<string>;
 
 export function GetCurrentContextForPath(arg1:string):Promise<string>;
 
+export function GetCurrentNamespace(arg1:string,arg2:string):Promise<string>;
+
+export function GetCurrentNamespaceForPath(arg1:string,arg2:string):Promise<string>;
+
 export function GetDefaultWSLUser(arg1:string):Promise<string>;
 
 export function GetOS():Promise<string>;
+
+export function ListNamespaces(arg1:string,arg2:string):Promise<Array<string>>;
+
+export function ListNamespacesForPath(arg1:string,arg2:string):Promise<Array<string>>;
 
 export function ListWSLDistros():Promise<Array<string>>;
 
@@ -28,8 +38,14 @@ export function ResolveTargetKubeconfig(arg1:main.TargetSelection):Promise<strin
 
 export function SelectKubeconfig():Promise<string>;
 
+export function SetNamespaceForPath(arg1:string,arg2:string,arg3:string):Promise<void>;
+
 export function SwitchContext(arg1:string):Promise<void>;
 
 export function SwitchContextForPath(arg1:string,arg2:string):Promise<void>;
+
+export function SwitchNamespace(arg1:string,arg2:string,arg3:string):Promise<void>;
+
+export function TestClusterConnectivity(arg1:string,arg2:string):Promise<main.ClusterInfo>;
 
 export function TestFileExists(arg1:string):Promise<boolean>;

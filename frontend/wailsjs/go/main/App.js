@@ -18,6 +18,10 @@ export function GetAllContextsForPath(arg1) {
   return window['go']['main']['App']['GetAllContextsForPath'](arg1);
 }
 
+export function GetClusterInfoForCurrentContext(arg1) {
+  return window['go']['main']['App']['GetClusterInfoForCurrentContext'](arg1);
+}
+
 export function GetCurrentContext() {
   return window['go']['main']['App']['GetCurrentContext']();
 }
@@ -26,12 +30,28 @@ export function GetCurrentContextForPath(arg1) {
   return window['go']['main']['App']['GetCurrentContextForPath'](arg1);
 }
 
+export function GetCurrentNamespace(arg1, arg2) {
+  return window['go']['main']['App']['GetCurrentNamespace'](arg1, arg2);
+}
+
+export function GetCurrentNamespaceForPath(arg1, arg2) {
+  return window['go']['main']['App']['GetCurrentNamespaceForPath'](arg1, arg2);
+}
+
 export function GetDefaultWSLUser(arg1) {
   return window['go']['main']['App']['GetDefaultWSLUser'](arg1);
 }
 
 export function GetOS() {
   return window['go']['main']['App']['GetOS']();
+}
+
+export function ListNamespaces(arg1, arg2) {
+  return window['go']['main']['App']['ListNamespaces'](arg1, arg2);
+}
+
+export function ListNamespacesForPath(arg1, arg2) {
+  return window['go']['main']['App']['ListNamespacesForPath'](arg1, arg2);
 }
 
 export function ListWSLDistros() {
@@ -54,12 +74,24 @@ export function SelectKubeconfig() {
   return window['go']['main']['App']['SelectKubeconfig']();
 }
 
+export function SetNamespaceForPath(arg1, arg2, arg3) {
+  return window['go']['main']['App']['SetNamespaceForPath'](arg1, arg2, arg3);
+}
+
 export function SwitchContext(arg1) {
   return window['go']['main']['App']['SwitchContext'](arg1);
 }
 
 export function SwitchContextForPath(arg1, arg2) {
   return window['go']['main']['App']['SwitchContextForPath'](arg1, arg2);
+}
+
+export function SwitchNamespace(arg1, arg2, arg3) {
+  return window['go']['main']['App']['SwitchNamespace'](arg1, arg2, arg3);
+}
+
+export function TestClusterConnectivity(arg1, arg2) {
+  return window['go']['main']['App']['TestClusterConnectivity'](arg1, arg2);
 }
 
 export function TestFileExists(arg1) {

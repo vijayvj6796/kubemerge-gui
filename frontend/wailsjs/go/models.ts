@@ -1,5 +1,27 @@
 export namespace main {
 	
+	export class ClusterInfo {
+	    reachable: boolean;
+	    version: string;
+	    authenticated: boolean;
+	    clusterName: string;
+	    serverUrl: string;
+	    errorMessage: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ClusterInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.reachable = source["reachable"];
+	        this.version = source["version"];
+	        this.authenticated = source["authenticated"];
+	        this.clusterName = source["clusterName"];
+	        this.serverUrl = source["serverUrl"];
+	        this.errorMessage = source["errorMessage"];
+	    }
+	}
 	export class MergeResult {
 	    targetConfigPath: string;
 	    backupPath: string;
