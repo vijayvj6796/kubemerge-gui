@@ -3,6 +3,7 @@ module kubemerge-gui
 go 1.23
 
 require (
+	fyne.io/systray v1.12.0
 	github.com/wailsapp/wails/v2 v2.11.0
 	k8s.io/apimachinery v0.30.3
 	k8s.io/client-go v0.30.3

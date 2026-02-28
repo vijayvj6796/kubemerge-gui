@@ -14,6 +14,8 @@ export function GetClusterInfoForCurrentContext(arg1:string):Promise<main.Cluste
 
 export function GetContextDetails(arg1:string,arg2:string):Promise<main.ContextDetails>;
 
+export function GetContextsWithCurrent():Promise<Array<main.ContextInfo>>;
+
 export function GetCurrentContext():Promise<string>;
 
 export function GetCurrentContextForPath(arg1:string):Promise<string>;
@@ -36,11 +38,17 @@ export function MergeIntoDefault(arg1:string):Promise<main.MergeResult>;
 
 export function MergeIntoTarget(arg1:string,arg2:string):Promise<main.MergeResult>;
 
+export function QuickSwitchContext(arg1:string):Promise<void>;
+
 export function ResolveTargetKubeconfig(arg1:main.TargetSelection):Promise<string>;
+
+export function SearchContexts(arg1:string):Promise<Array<main.ContextInfo>>;
 
 export function SelectKubeconfig():Promise<string>;
 
 export function SetNamespaceForPath(arg1:string,arg2:string,arg3:string):Promise<void>;
+
+export function ShowContextSearchDialog():Promise<void>;
 
 export function SwitchContext(arg1:string):Promise<void>;
 

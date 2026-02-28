@@ -21,6 +21,7 @@ import {
   GetContextDetails,
 } from "../wailsjs/go/main/App";
 import ContextDropdown from "./components/ContextDropdown";
+import ContextSearchModal, { useContextSearchModal } from "./components/ContextSearchModal";
 
 type MergeResult = {
   targetConfigPath: string;
@@ -87,6 +88,9 @@ export default function App() {
   // Refs for keyboard shortcuts
   const searchInputRef = useRef<HTMLInputElement>(null);
   const namespaceSearchInputRef = useRef<HTMLInputElement>(null);
+  
+  // Context search modal from system tray
+  const contextSearchModal = useContextSearchModal();
 
   const canMerge = useMemo(() => filePath.length > 0 && !busy, [filePath, busy]);
 
@@ -814,6 +818,11 @@ export default function App() {
       <footer style={{ textAlign: "center", padding: "20px", color: "#888", fontSize: "14px" }}>
         Made with ❤️ by Cipheronic
       </footer>
+      
+      {/* Context Search Modal (triggered from system tray) */}
+      {contextSearchModal.isOpen && (
+        <ContextSearchModal onClose={contextSearchModal.close} />
+      )}
     </div>
   );
 }

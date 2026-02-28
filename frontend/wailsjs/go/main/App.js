@@ -26,6 +26,10 @@ export function GetContextDetails(arg1, arg2) {
   return window['go']['main']['App']['GetContextDetails'](arg1, arg2);
 }
 
+export function GetContextsWithCurrent() {
+  return window['go']['main']['App']['GetContextsWithCurrent']();
+}
+
 export function GetCurrentContext() {
   return window['go']['main']['App']['GetCurrentContext']();
 }
@@ -70,8 +74,16 @@ export function MergeIntoTarget(arg1, arg2) {
   return window['go']['main']['App']['MergeIntoTarget'](arg1, arg2);
 }
 
+export function QuickSwitchContext(arg1) {
+  return window['go']['main']['App']['QuickSwitchContext'](arg1);
+}
+
 export function ResolveTargetKubeconfig(arg1) {
   return window['go']['main']['App']['ResolveTargetKubeconfig'](arg1);
+}
+
+export function SearchContexts(arg1) {
+  return window['go']['main']['App']['SearchContexts'](arg1);
 }
 
 export function SelectKubeconfig() {
@@ -80,6 +92,10 @@ export function SelectKubeconfig() {
 
 export function SetNamespaceForPath(arg1, arg2, arg3) {
   return window['go']['main']['App']['SetNamespaceForPath'](arg1, arg2, arg3);
+}
+
+export function ShowContextSearchDialog() {
+  return window['go']['main']['App']['ShowContextSearchDialog']();
 }
 
 export function SwitchContext(arg1) {
