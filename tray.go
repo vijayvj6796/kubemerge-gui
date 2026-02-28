@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 	"log"
+	goruntime "runtime"
 	"strings"
 	"time"
 
@@ -12,13 +13,17 @@ import (
 )
 
 //go:embed build/appicon.png
-var iconData []byte
+var iconDataPNG []byte
+
+//go:embed build/windows/icon.ico
+var iconDataICO []byte
 
 var app *App
 
 type contextMenuItem struct {
 	item        *systray.MenuItem
 	contextName string
+	stopCh      chan struct{} // Channel to signal the goroutine to stop
 }
 
 var contextMenuItems []*contextMenuItem
@@ -38,6 +43,12 @@ func setupSystray(appInstance *App) {
 }
 
 func onReady() {
+	// Use ICO format for Windows, PNG for others
+	iconData := iconDataPNG
+	if goruntime.GOOS == "windows" {
+		iconData = iconDataICO
+	}
+
 	systray.SetIcon(iconData)
 	systray.SetTitle("KubeMerge")
 	systray.SetTooltip("KubeMerge GUI - Kubernetes Context Manager")
@@ -135,13 +146,13 @@ func refreshContextMenu() {
 		return
 	}
 
-	contexts, err := app.GetAllContexts()
+	contexts, err := app.GetAllContextsForTray()
 	if err != nil {
 		log.Printf("Error getting contexts: %v", err)
 		return
 	}
 
-	currentContext, _ := app.GetCurrentContext()
+	currentContext, _ := app.GetCurrentContextForTray()
 
 	// Cache all contexts
 	allContextsCache = contexts
@@ -172,6 +183,9 @@ func refreshContextMenu() {
 
 	// Clear old menu items
 	for _, item := range contextMenuItems {
+		if item.stopCh != nil {
+			close(item.stopCh) // Signal the monitoring goroutine to stop
+		}
 		item.item.Hide()
 	}
 	contextMenuItems = make([]*contextMenuItem, 0)
@@ -219,12 +233,14 @@ func refreshContextMenu() {
 		}
 
 		menuItem := systray.AddMenuItem(title, "Switch to context: "+ctx)
+		stopCh := make(chan struct{})
 		contextMenuItems = append(contextMenuItems, &contextMenuItem{
 			item:        menuItem,
 			contextName: ctx,
+			stopCh:      stopCh,
 		})
 		// Start monitoring this menu item
-		go monitorSingleContextClick(menuItem, ctx)
+		go monitorSingleContextClick(menuItem, ctx, stopCh)
 	}
 
 	log.Printf("Showing page %d of %d (%d-%d of %d contexts)",
@@ -232,21 +248,28 @@ func refreshContextMenu() {
 }
 
 // monitorSingleContextClick monitors clicks for a single context menu item
-func monitorSingleContextClick(menuItem *systray.MenuItem, contextName string) {
+func monitorSingleContextClick(menuItem *systray.MenuItem, contextName string, stopCh chan struct{}) {
 	for {
-		<-menuItem.ClickedCh
-		// Switch context
-		log.Printf("Context menu item clicked: %s", contextName)
-		err := app.SwitchContext(contextName)
-		if err != nil {
-			log.Printf("Error switching context to %s: %v", contextName, err)
-		} else {
-			log.Printf("Successfully switched to context: %s", contextName)
-			// Update tooltip to show current context
-			systray.SetTooltip("KubeMerge - Current: " + contextName)
-			// Refresh menu to show checkmark
-			time.Sleep(200 * time.Millisecond) // Brief delay for visual feedback
-			refreshContextMenu()
+		select {
+		case <-stopCh:
+			// Stop monitoring when signaled
+			log.Printf("Stopping monitor for context: %s", contextName)
+			return
+		case <-menuItem.ClickedCh:
+			// Switch context
+			log.Printf("Context menu item clicked: %s", contextName)
+			err := app.SwitchContextForTray(contextName)
+			if err != nil {
+				log.Printf("Error switching context to %s: %v", contextName, err)
+			} else {
+				log.Printf("Successfully switched to context: %s", contextName)
+				// Update tooltip to show current context
+				systray.SetTooltip("KubeMerge - Current: " + contextName)
+				// Refresh menu to show checkmark
+				time.Sleep(200 * time.Millisecond) // Brief delay for visual feedback
+				refreshContextMenu()
+				return // Exit after switching since menu will be recreated
+			}
 		}
 	}
 }

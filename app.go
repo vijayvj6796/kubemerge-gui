@@ -75,7 +75,8 @@ func deleteContextFromFile(path, name string) error {
 }
 
 type App struct {
-	ctx context.Context
+	ctx              context.Context
+	targetKubeconfig string // Stores the current target kubeconfig path for tray operations
 }
 
 func NewApp() *App {

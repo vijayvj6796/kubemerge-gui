@@ -10,6 +10,8 @@ export function GetAllContexts():Promise<Array<string>>;
 
 export function GetAllContextsForPath(arg1:string):Promise<Array<string>>;
 
+export function GetAllContextsForTray():Promise<Array<string>>;
+
 export function GetClusterInfoForCurrentContext(arg1:string):Promise<main.ClusterInfo>;
 
 export function GetContextDetails(arg1:string,arg2:string):Promise<main.ContextDetails>;
@@ -20,6 +22,8 @@ export function GetCurrentContext():Promise<string>;
 
 export function GetCurrentContextForPath(arg1:string):Promise<string>;
 
+export function GetCurrentContextForTray():Promise<string>;
+
 export function GetCurrentNamespace(arg1:string,arg2:string):Promise<string>;
 
 export function GetCurrentNamespaceForPath(arg1:string,arg2:string):Promise<string>;
@@ -27,6 +31,8 @@ export function GetCurrentNamespaceForPath(arg1:string,arg2:string):Promise<stri
 export function GetDefaultWSLUser(arg1:string):Promise<string>;
 
 export function GetOS():Promise<string>;
+
+export function GetTargetKubeconfig():Promise<string>;
 
 export function ListNamespaces(arg1:string,arg2:string):Promise<Array<string>>;
 
@@ -48,11 +54,15 @@ export function SelectKubeconfig():Promise<string>;
 
 export function SetNamespaceForPath(arg1:string,arg2:string,arg3:string):Promise<void>;
 
+export function SetTargetKubeconfig(arg1:string):Promise<void>;
+
 export function ShowContextSearchDialog():Promise<void>;
 
 export function SwitchContext(arg1:string):Promise<void>;
 
 export function SwitchContextForPath(arg1:string,arg2:string):Promise<void>;
+
+export function SwitchContextForTray(arg1:string):Promise<void>;
 
 export function SwitchNamespace(arg1:string,arg2:string,arg3:string):Promise<void>;
 

@@ -18,12 +18,13 @@ type ContextInfo struct {
 
 // SearchContexts searches for contexts matching the query
 func (a *App) SearchContexts(query string) ([]ContextInfo, error) {
-	contexts, err := a.GetAllContexts()
+	// Use tray's target kubeconfig
+	contexts, err := a.GetAllContextsForTray()
 	if err != nil {
 		return nil, err
 	}
 
-	currentContext, _ := a.GetCurrentContext()
+	currentContext, _ := a.GetCurrentContextForTray()
 
 	var results []ContextInfo
 	lowerQuery := strings.ToLower(query)
@@ -54,7 +55,7 @@ func (a *App) SearchContexts(query string) ([]ContextInfo, error) {
 
 // QuickSwitchContext is a convenience method for tray operations
 func (a *App) QuickSwitchContext(contextName string) error {
-	err := a.SwitchContext(contextName)
+	err := a.SwitchContextForTray(contextName)
 	if err != nil {
 		return err
 	}
@@ -69,12 +70,13 @@ func (a *App) QuickSwitchContext(contextName string) error {
 
 // GetContextsWithCurrent returns all contexts with current context marked
 func (a *App) GetContextsWithCurrent() ([]ContextInfo, error) {
-	contexts, err := a.GetAllContexts()
+	// Use tray's target kubeconfig
+	contexts, err := a.GetAllContextsForTray()
 	if err != nil {
 		return nil, err
 	}
 
-	currentContext, _ := a.GetCurrentContext()
+	currentContext, _ := a.GetCurrentContextForTray()
 
 	var results []ContextInfo
 	for _, ctx := range contexts {

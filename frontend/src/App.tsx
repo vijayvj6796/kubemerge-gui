@@ -19,6 +19,7 @@ import {
   ListNamespacesForPath,
   SetNamespaceForPath,
   GetContextDetails,
+  SetTargetKubeconfig,
 } from "../wailsjs/go/main/App";
 import ContextDropdown from "./components/ContextDropdown";
 import ContextSearchModal, { useContextSearchModal } from "./components/ContextSearchModal";
@@ -198,6 +199,10 @@ export default function App() {
 
       console.log(`Resolved path: ${path}`);
       setTargetPath(path);
+      
+      // Update backend so tray uses the correct kubeconfig
+      await SetTargetKubeconfig(path);
+      
       setStatus(`Resolved path: ${path}. Checking if file exists...`);
 
       const ok = await TestFileExists(path);

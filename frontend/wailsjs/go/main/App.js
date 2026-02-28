@@ -18,6 +18,10 @@ export function GetAllContextsForPath(arg1) {
   return window['go']['main']['App']['GetAllContextsForPath'](arg1);
 }
 
+export function GetAllContextsForTray() {
+  return window['go']['main']['App']['GetAllContextsForTray']();
+}
+
 export function GetClusterInfoForCurrentContext(arg1) {
   return window['go']['main']['App']['GetClusterInfoForCurrentContext'](arg1);
 }
@@ -38,6 +42,10 @@ export function GetCurrentContextForPath(arg1) {
   return window['go']['main']['App']['GetCurrentContextForPath'](arg1);
 }
 
+export function GetCurrentContextForTray() {
+  return window['go']['main']['App']['GetCurrentContextForTray']();
+}
+
 export function GetCurrentNamespace(arg1, arg2) {
   return window['go']['main']['App']['GetCurrentNamespace'](arg1, arg2);
 }
@@ -52,6 +60,10 @@ export function GetDefaultWSLUser(arg1) {
 
 export function GetOS() {
   return window['go']['main']['App']['GetOS']();
+}
+
+export function GetTargetKubeconfig() {
+  return window['go']['main']['App']['GetTargetKubeconfig']();
 }
 
 export function ListNamespaces(arg1, arg2) {
@@ -94,6 +106,10 @@ export function SetNamespaceForPath(arg1, arg2, arg3) {
   return window['go']['main']['App']['SetNamespaceForPath'](arg1, arg2, arg3);
 }
 
+export function SetTargetKubeconfig(arg1) {
+  return window['go']['main']['App']['SetTargetKubeconfig'](arg1);
+}
+
 export function ShowContextSearchDialog() {
   return window['go']['main']['App']['ShowContextSearchDialog']();
 }
@@ -104,6 +120,10 @@ export function SwitchContext(arg1) {
 
 export function SwitchContextForPath(arg1, arg2) {
   return window['go']['main']['App']['SwitchContextForPath'](arg1, arg2);
+}
+
+export function SwitchContextForTray(arg1) {
+  return window['go']['main']['App']['SwitchContextForTray'](arg1);
 }
 
 export function SwitchNamespace(arg1, arg2, arg3) {
