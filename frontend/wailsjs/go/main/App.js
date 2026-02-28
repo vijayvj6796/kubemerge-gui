@@ -22,6 +22,10 @@ export function GetClusterInfoForCurrentContext(arg1) {
   return window['go']['main']['App']['GetClusterInfoForCurrentContext'](arg1);
 }
 
+export function GetContextDetails(arg1, arg2) {
+  return window['go']['main']['App']['GetContextDetails'](arg1, arg2);
+}
+
 export function GetCurrentContext() {
   return window['go']['main']['App']['GetCurrentContext']();
 }

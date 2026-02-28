@@ -22,6 +22,34 @@ export namespace main {
 	        this.errorMessage = source["errorMessage"];
 	    }
 	}
+	export class ContextDetails {
+	    contextName: string;
+	    clusterName: string;
+	    clusterUrl: string;
+	    userName: string;
+	    namespace: string;
+	    certExpiration: string;
+	    certExpiresInDays: number;
+	    hasCertExpiration: boolean;
+	    certExpirationWarning: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ContextDetails(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.contextName = source["contextName"];
+	        this.clusterName = source["clusterName"];
+	        this.clusterUrl = source["clusterUrl"];
+	        this.userName = source["userName"];
+	        this.namespace = source["namespace"];
+	        this.certExpiration = source["certExpiration"];
+	        this.certExpiresInDays = source["certExpiresInDays"];
+	        this.hasCertExpiration = source["hasCertExpiration"];
+	        this.certExpirationWarning = source["certExpirationWarning"];
+	    }
+	}
 	export class MergeResult {
 	    targetConfigPath: string;
 	    backupPath: string;

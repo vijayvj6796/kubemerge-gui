@@ -18,6 +18,7 @@ import {
   GetCurrentNamespaceForPath,
   ListNamespacesForPath,
   SetNamespaceForPath,
+  GetContextDetails,
 } from "../wailsjs/go/main/App";
 import ContextDropdown from "./components/ContextDropdown";
 
@@ -38,6 +39,18 @@ type ClusterInfo = {
   clusterName: string;
   serverUrl: string;
   errorMessage: string;
+};
+
+type ContextDetails = {
+  contextName: string;
+  clusterName: string;
+  clusterUrl: string;
+  userName: string;
+  namespace: string;
+  certExpiration: string;
+  certExpiresInDays: number;
+  hasCertExpiration: boolean;
+  certExpirationWarning: string;
 };
 
 type TargetKind = "windows" | "wsl" | "linux";

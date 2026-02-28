@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -610,4 +612,112 @@ func (a *App) SwitchNamespace(kubeconfigPath, contextName, namespace string) err
 
 	// Save the kubeconfig
 	return clientcmd.WriteToFile(*cfg, kubeconfigPath)
+}
+
+// ContextDetails holds detailed information about a single context
+type ContextDetails struct {
+	ContextName           string    `json:"contextName"`
+	ClusterName           string    `json:"clusterName"`
+	ClusterURL            string    `json:"clusterUrl"`
+	UserName              string    `json:"userName"`
+	Namespace             string    `json:"namespace"`
+	CertExpiration        time.Time `json:"certExpiration"`
+	CertExpiresInDays     int       `json:"certExpiresInDays"`
+	HasCertExpiration     bool      `json:"hasCertExpiration"`
+	CertExpirationWarning string    `json:"certExpirationWarning"`
+}
+
+// GetContextDetails retrieves detailed information about a specific context
+func (a *App) GetContextDetails(kubeconfigPath, contextName string) (ContextDetails, error) {
+	details := ContextDetails{
+		ContextName:           contextName,
+		Namespace:             "default",
+		HasCertExpiration:     false,
+		CertExpirationWarning: "",
+	}
+
+	// Load kubeconfig
+	cfg, err := clientcmd.LoadFromFile(kubeconfigPath)
+	if err != nil {
+		return details, fmt.Errorf("failed to load kubeconfig: %v", err)
+	}
+
+	// Get context
+	ctx, exists := cfg.Contexts[contextName]
+	if !exists {
+		return details, fmt.Errorf("context '%s' not found", contextName)
+	}
+
+	details.ClusterName = ctx.Cluster
+	details.UserName = ctx.AuthInfo
+	if ctx.Namespace != "" {
+		details.Namespace = ctx.Namespace
+	}
+
+	// Get cluster URL
+	cluster, exists := cfg.Clusters[ctx.Cluster]
+	if exists {
+		details.ClusterURL = cluster.Server
+	}
+
+	// Get certificate expiration from user auth info
+	authInfo, exists := cfg.AuthInfos[ctx.AuthInfo]
+	if exists && len(authInfo.ClientCertificateData) > 0 {
+		certExpiration, err := parseCertificateExpiration(authInfo.ClientCertificateData)
+		if err == nil {
+			details.HasCertExpiration = true
+			details.CertExpiration = certExpiration
+
+			// Calculate days until expiration
+			daysUntilExpiry := int(time.Until(certExpiration).Hours() / 24)
+			details.CertExpiresInDays = daysUntilExpiry
+
+			// Set warning message based on days remaining
+			if daysUntilExpiry < 0 {
+				details.CertExpirationWarning = "⚠️ Certificate has EXPIRED!"
+			} else if daysUntilExpiry <= 7 {
+				details.CertExpirationWarning = fmt.Sprintf("⚠️ Certificate expires in %d days", daysUntilExpiry)
+			} else if daysUntilExpiry <= 30 {
+				details.CertExpirationWarning = fmt.Sprintf("⚡ Certificate expires in %d days", daysUntilExpiry)
+			}
+		}
+	} else if exists && authInfo.ClientCertificate != "" {
+		// Try to read from file path
+		certData, err := os.ReadFile(authInfo.ClientCertificate)
+		if err == nil {
+			certExpiration, err := parseCertificateExpiration(certData)
+			if err == nil {
+				details.HasCertExpiration = true
+				details.CertExpiration = certExpiration
+
+				daysUntilExpiry := int(time.Until(certExpiration).Hours() / 24)
+				details.CertExpiresInDays = daysUntilExpiry
+
+				if daysUntilExpiry < 0 {
+					details.CertExpirationWarning = "⚠️ Certificate has EXPIRED!"
+				} else if daysUntilExpiry <= 7 {
+					details.CertExpirationWarning = fmt.Sprintf("⚠️ Certificate expires in %d days", daysUntilExpiry)
+				} else if daysUntilExpiry <= 30 {
+					details.CertExpirationWarning = fmt.Sprintf("⚡ Certificate expires in %d days", daysUntilExpiry)
+				}
+			}
+		}
+	}
+
+	return details, nil
+}
+
+// parseCertificateExpiration extracts the expiration date from a PEM-encoded certificate
+func parseCertificateExpiration(certData []byte) (time.Time, error) {
+	block, _ := pem.Decode(certData)
+	if block == nil {
+		return time.Time{}, fmt.Errorf("failed to decode PEM block")
+	}
+
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("failed to parse certificate: %v", err)
+	}
+
+	return cert.NotAfter, nil
 }

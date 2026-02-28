@@ -12,6 +12,8 @@ export function GetAllContextsForPath(arg1:string):Promise<Array<string>>;
 
 export function GetClusterInfoForCurrentContext(arg1:string):Promise<main.ClusterInfo>;
 
+export function GetContextDetails(arg1:string,arg2:string):Promise<main.ContextDetails>;
+
 export function GetCurrentContext():Promise<string>;
 
 export function GetCurrentContextForPath(arg1:string):Promise<string>;
