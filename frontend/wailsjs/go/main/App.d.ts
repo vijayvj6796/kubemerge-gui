@@ -77,3 +77,9 @@ export function TestFileExists(arg1:string):Promise<boolean>;
 export function ToggleFloatingMode():Promise<void>;
 
 export function ToggleFloatingWidget():Promise<void>;
+
+export function WidgetCollapse():Promise<void>;
+
+export function WidgetExpand():Promise<void>;
+
+export function WidgetFullGUI():Promise<void>;

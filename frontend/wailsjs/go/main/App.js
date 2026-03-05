@@ -153,3 +153,15 @@ export function ToggleFloatingMode() {
 export function ToggleFloatingWidget() {
   return window['go']['main']['App']['ToggleFloatingWidget']();
 }
+
+export function WidgetCollapse() {
+  return window['go']['main']['App']['WidgetCollapse']();
+}
+
+export function WidgetExpand() {
+  return window['go']['main']['App']['WidgetExpand']();
+}
+
+export function WidgetFullGUI() {
+  return window['go']['main']['App']['WidgetFullGUI']();
+}
