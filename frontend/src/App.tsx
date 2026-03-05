@@ -86,6 +86,10 @@ export default function App() {
   const [loadingNamespaces, setLoadingNamespaces] = useState<boolean>(false);
   const [namespaceSearchTerm, setNamespaceSearchTerm] = useState("");
   
+  // Context details
+  const [contextDetails, setContextDetails] = useState<ContextDetails | null>(null);
+  const [loadingDetails, setLoadingDetails] = useState<boolean>(false);
+  
   // Refs for keyboard shortcuts
   const searchInputRef = useRef<HTMLInputElement>(null);
   const namespaceSearchInputRef = useRef<HTMLInputElement>(null);
@@ -95,25 +99,29 @@ export default function App() {
 
   const canMerge = useMemo(() => filePath.length > 0 && !busy, [filePath, busy]);
 
-  // Detect OS on mount
+  // Detect OS on mount and auto-load default target
   useEffect(() => {
-    async function detectOS() {
+    async function detectOSAndLoadTarget() {
       try {
         const detectedOS = await GetOS();
         setOs(detectedOS);
         // Auto-select appropriate default target
         if (detectedOS === "windows") {
           setTargetKind("windows");
-          setStatus(`Running on Windows. Select target: Windows or WSL.`);
+          setStatus(`Running on Windows. Loading default Windows kubeconfig...`);
+          // Auto-load Windows target
+          await loadFromTarget("windows", "", "");
         } else {
           setTargetKind("linux");
-          setStatus(`Running on ${detectedOS}. Using native Linux kubeconfig.`);
+          setStatus(`Running on ${detectedOS}. Loading Linux kubeconfig...`);
+          // Auto-load Linux target
+          await loadFromTarget("linux", "", "");
         }
       } catch (e: any) {
-        setStatus(`Failed to detect OS: ${e?.message ?? String(e)}`);
+        setStatus(`Failed to detect OS or load target: ${e?.message ?? String(e)}`);
       }
     }
-    detectOS();
+    detectOSAndLoadTarget();
   }, []);
 
   // Keyboard shortcuts
@@ -421,6 +429,27 @@ export default function App() {
       setStatus(`Error switching namespace: ${e?.message ?? String(e)}`);
     }
   }
+
+  async function loadContextDetails() {
+    if (!targetPath || !currentContext) {
+      setStatus("No context selected. Load target first.");
+      return;
+    }
+
+    setLoadingDetails(true);
+    setStatus("Loading context details...");
+
+    try {
+      const details = (await GetContextDetails(targetPath, currentContext)) as ContextDetails;
+      setContextDetails(details);
+      setStatus(`Loaded details for context: ${currentContext}`);
+    } catch (e: any) {
+      setStatus(`Failed to load context details: ${e?.message ?? String(e)}`);
+      setContextDetails(null);
+    } finally {
+      setLoadingDetails(false);
+    }
+  }
   
   // Filtered contexts for dropdown, using searchTerm
   const filteredContexts = useMemo(() => {
@@ -722,6 +751,75 @@ export default function App() {
               Switch
             </button>
           </div>
+
+          {/* Context Details View */}
+          <div className="sectionTitle" style={{ marginTop: "20px" }}>Context Details</div>
+          <button
+            className="btnGhost"
+            disabled={!currentContext || loadingDetails}
+            onClick={loadContextDetails}
+            style={{ width: "100%", marginBottom: "10px" }}
+          >
+            {loadingDetails ? "Loading..." : "Load Context Details"}
+          </button>
+
+          {contextDetails && (
+            <div style={{ 
+              padding: "12px", 
+              backgroundColor: "rgba(255,255,255,0.05)",
+              borderRadius: "6px",
+              fontSize: "13px",
+              marginBottom: "10px"
+            }}>
+              <div style={{ marginBottom: "8px" }}>
+                <strong>Context:</strong> <code>{contextDetails.contextName}</code>
+              </div>
+              <div style={{ marginBottom: "8px" }}>
+                <strong>Cluster:</strong> <code>{contextDetails.clusterName}</code>
+              </div>
+              {contextDetails.clusterUrl && (
+                <div style={{ marginBottom: "8px", wordBreak: "break-all" }}>
+                  <strong>Cluster URL:</strong> <code style={{ fontSize: "11px" }}>{contextDetails.clusterUrl}</code>
+                </div>
+              )}
+              <div style={{ marginBottom: "8px" }}>
+                <strong>User:</strong> <code>{contextDetails.userName}</code>
+              </div>
+              <div style={{ marginBottom: "8px" }}>
+                <strong>Namespace:</strong> <code>{contextDetails.namespace}</code>
+              </div>
+              
+              {contextDetails.hasCertExpiration && (
+                <>
+                  <div style={{ marginBottom: "8px" }}>
+                    <strong>Certificate Expiration:</strong>{" "}
+                    <code>{new Date(contextDetails.certExpiration).toLocaleDateString()}</code>
+                  </div>
+                  <div style={{ marginBottom: "8px" }}>
+                    <strong>Days Until Expiry:</strong>{" "}
+                    <code style={{ 
+                      color: contextDetails.certExpiresInDays < 0 ? "#f87171" : 
+                             contextDetails.certExpiresInDays <= 7 ? "#fb923c" : 
+                             contextDetails.certExpiresInDays <= 30 ? "#fbbf24" : "#4ade80"
+                    }}>
+                      {contextDetails.certExpiresInDays < 0 ? "EXPIRED" : `${contextDetails.certExpiresInDays} days`}
+                    </code>
+                  </div>
+                  {contextDetails.certExpirationWarning && (
+                    <div style={{ 
+                      padding: "8px", 
+                      backgroundColor: contextDetails.certExpiresInDays < 0 ? "#3a1a1a" : "#3a2a1a",
+                      borderRadius: "4px",
+                      color: contextDetails.certExpiresInDays < 0 ? "#f87171" : "#fbbf24",
+                      fontSize: "12px"
+                    }}>
+                      {contextDetails.certExpirationWarning}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
 
           <div className="sectionTitle">Contexts</div>
           <ul className="list">
