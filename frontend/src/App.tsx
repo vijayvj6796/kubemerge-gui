@@ -469,15 +469,21 @@ export default function App() {
     <div className="container">
       <div className="topbar">
         <div>
-          <h1>KubeMerge GUI</h1>
+          <h1>⚡ KubeMerge GUI</h1>
           <p className="subtitle">
             Merge kubeconfigs safely + switch contexts (Windows / WSL) like{" "}
             <code>kubectx</code>
           </p>
         </div>
         <div className="badge">
-          <div>Context: <code>{currentContext || "(unknown)"}</code></div>
-          <div style={{ marginTop: 4 }}>Namespace: <code>{currentNamespace || "default"}</code></div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ opacity: 0.6 }}>Context:</span> 
+            <code style={{ fontWeight: 600 }}>{currentContext || "(none)"}</code>
+          </div>
+          <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ opacity: 0.6 }}>Namespace:</span> 
+            <code style={{ fontWeight: 600 }}>{currentNamespace || "default"}</code>
+          </div>
         </div>
       </div>
 
@@ -486,12 +492,12 @@ export default function App() {
       <div className="grid">
         {/* LEFT: Merge */}
         <div className="card">
-          <h2>Merge kubeconfig</h2>
+          <h2>📦 Merge kubeconfig</h2>
 
           <div className="label">Selected file</div>
           <div className="pathbox">{filePath || "No file selected"}</div>
 
-          <div className="row" style={{ marginTop: "12px" }}>
+          <div className="row" style={{ marginTop: "14px" }}>
             <button
               className="btnGhost"
               onClick={async () => {
@@ -502,45 +508,72 @@ export default function App() {
                 }
               }}
             >
-              Select kubeconfig
+              📁 Select kubeconfig
             </button>
 
             <button className="btnPrimary" disabled={!canMerge} onClick={runMerge}>
-              {busy ? "Merging..." : "Merge into default kubeconfig"}
+              {busy ? (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className="spinner"></span> Merging...
+                </span>
+              ) : (
+                "🔀 Merge into target"
+              )}
             </button>
           </div>
 
           {result && (
             <>
-              <div className="sectionTitle">Last merge result</div>
+              <div className="sectionTitle">✅ Last merge result</div>
+
+              <div className="infoBox infoBox-success" style={{ marginBottom: "12px" }}>
+                <div style={{ marginBottom: "8px", fontWeight: 600, fontSize: "13px" }}>
+                  Merge completed successfully!
+                </div>
+                <div style={{ fontSize: "12px", opacity: 0.9 }}>
+                  {result.message}
+                </div>
+              </div>
 
               <div className="label">Target</div>
               <div className="pathbox">{result.targetConfigPath}</div>
 
-              <div className="label" style={{ marginTop: "10px" }}>
+              <div className="label" style={{ marginTop: "12px" }}>
                 Backup
               </div>
               <div className="pathbox">{result.backupPath || "(none)"}</div>
 
-              <div className="sectionTitle">Added</div>
-              <ul className="list">
-                <li>
-                  <b>Clusters:</b> {result.addedClusters.join(", ") || "(none)"}
-                </li>
-                <li>
-                  <b>Contexts:</b> {result.addedContexts.join(", ") || "(none)"}
-                </li>
-                <li>
-                  <b>Users:</b> {result.addedUsers.join(", ") || "(none)"}
-                </li>
-              </ul>
+              <div className="sectionTitle">📊 Added Resources</div>
+              <div className="infoBox infoBox-info" style={{ fontSize: "12px" }}>
+                <div style={{ marginBottom: "6px" }}>
+                  <strong>Clusters:</strong> {result.addedClusters.length > 0 ? (
+                    <code>{result.addedClusters.join(", ")}</code>
+                  ) : (
+                    <span style={{ opacity: 0.6 }}>(none)</span>
+                  )}
+                </div>
+                <div style={{ marginBottom: "6px" }}>
+                  <strong>Contexts:</strong> {result.addedContexts.length > 0 ? (
+                    <code>{result.addedContexts.join(", ")}</code>
+                  ) : (
+                    <span style={{ opacity: 0.6 }}>(none)</span>
+                  )}
+                </div>
+                <div>
+                  <strong>Users:</strong> {result.addedUsers.length > 0 ? (
+                    <code>{result.addedUsers.join(", ")}</code>
+                  ) : (
+                    <span style={{ opacity: 0.6 }}>(none)</span>
+                  )}
+                </div>
+              </div>
             </>
           )}
         </div>
 
         {/* RIGHT: Target + Context */}
         <div className="card">
-          <h2>Target & Context</h2>
+          <h2>🎯 Target & Context</h2>
 
           <div className="label">Target</div>
           <div className="row" style={{ marginBottom: "10px" }}>
@@ -623,12 +656,12 @@ export default function App() {
 
           <div className="row" style={{ marginBottom: "10px" }}>
             <button
-              className="btnGhost"
+              className="btnPrimary"
               onClick={async () => {
                 await loadFromTarget(targetKind, wslDistro, linuxUser);
               }}
             >
-              Load Target
+              🔄 Load Target
             </button>
           </div>
 
@@ -636,14 +669,18 @@ export default function App() {
           <div className="pathbox">{targetPath || "(not loaded yet)"}</div>
 
 
-          <div className="sectionTitle">Switch context</div>
+          <div className="sectionTitle">🔄 Switch context (kubectx)</div>
+          <div style={{ marginBottom: "10px", fontSize: "13px", color: "var(--muted2)" }}>
+            Current: <code style={{ color: "var(--primary)", fontWeight: 600 }}>{currentContext || "(none)"}</code>
+          </div>
           <div className="row">
             <div className="dropdown">
               <div
                 className="dropdownSelected"
                 onClick={() => setDropdownOpen(!dropdownOpen)}
               >
-                {selectedContext || "Select context"}
+                <span>{selectedContext || "Select context"}</span>
+                <span style={{ opacity: 0.5 }}>▼</span>
               </div>
                         
                 {dropdownOpen && (
@@ -653,14 +690,16 @@ export default function App() {
                       <input
                         ref={searchInputRef}
                         type="text"
-                        placeholder="Search contexts... (Ctrl+F)"
+                        placeholder="🔍 Search contexts..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         autoFocus
                       />
                     </div>
                     {filteredContexts.length === 0 && (
-                      <div className="dropdownItem">No contexts found</div>
+                      <div className="dropdownItem" style={{ opacity: 0.6, cursor: "default" }}>
+                        No contexts found
+                      </div>
                     )}
                     {filteredContexts.map((c) => (
                       <div
@@ -672,6 +711,7 @@ export default function App() {
                           setSearchTerm("");
                         }}
                       >
+                        {c === currentContext && <span style={{ marginRight: 8 }}>✓</span>}
                         {c}
                       </div>
                     ))}
@@ -680,18 +720,18 @@ export default function App() {
             </div>
 
             <button
-              className="btnPrimary"
+              className="btnSuccess"
               disabled={!selectedContext || selectedContext === currentContext}
               onClick={doSwitch}
             >
-              Switch
+              ✓ Switch
             </button>
           </div>
 
           {/* Namespace Switcher */}
-          <div className="sectionTitle" style={{ marginTop: "20px" }}>Switch namespace (kubens)</div>
-          <div style={{ marginBottom: "10px", fontSize: "13px", color: "#999" }}>
-            Current: <code>{currentNamespace}</code>
+          <div className="sectionTitle" style={{ marginTop: "20px" }}>📦 Switch namespace (kubens)</div>
+          <div style={{ marginBottom: "10px", fontSize: "13px", color: "var(--muted2)" }}>
+            Current: <code style={{ color: "var(--info)", fontWeight: 600 }}>{currentNamespace}</code>
           </div>
           <div className="row">
             <div className="dropdown">
@@ -704,27 +744,31 @@ export default function App() {
                   setNamespaceDropdownOpen(!namespaceDropdownOpen);
                 }}
               >
-                {selectedNamespace || "Select namespace"}
+                <span>{selectedNamespace || "Select namespace"}</span>
+                <span style={{ opacity: 0.5 }}>▼</span>
               </div>
                         
               {namespaceDropdownOpen && (
                 <div className="dropdownMenu">
-                  {/* 🔍 Search inside dropdown */}
                   <div className="dropdownSearch">
                     <input
                       ref={namespaceSearchInputRef}
                       type="text"
-                      placeholder="Search namespaces..."
+                      placeholder="🔍 Search namespaces..."
                       value={namespaceSearchTerm}
                       onChange={(e) => setNamespaceSearchTerm(e.target.value)}
                       autoFocus
                     />
                   </div>
                   {loadingNamespaces && (
-                    <div className="dropdownItem">Loading namespaces...</div>
+                    <div className="dropdownItem" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span className="spinner"></span> Loading namespaces...
+                    </div>
                   )}
                   {!loadingNamespaces && filteredNamespaces.length === 0 && (
-                    <div className="dropdownItem">No namespaces found</div>
+                    <div className="dropdownItem" style={{ opacity: 0.6, cursor: "default" }}>
+                      No namespaces found
+                    </div>
                   )}
                   {!loadingNamespaces && filteredNamespaces.map((ns) => (
                     <div
@@ -736,6 +780,7 @@ export default function App() {
                         setNamespaceSearchTerm("");
                       }}
                     >
+                      {ns === currentNamespace && <span style={{ marginRight: 8 }}>✓</span>}
                       {ns}
                     </div>
                   ))}
@@ -744,42 +789,43 @@ export default function App() {
             </div>
 
             <button
-              className="btnPrimary"
+              className="btnSuccess"
               disabled={!selectedNamespace || selectedNamespace === currentNamespace || loadingNamespaces}
               onClick={doSwitchNamespace}
             >
-              Switch
+              ✓ Switch
             </button>
           </div>
 
           {/* Context Details View */}
-          <div className="sectionTitle" style={{ marginTop: "20px" }}>Context Details</div>
+          <div className="sectionTitle" style={{ marginTop: "20px" }}>📋 Context Details</div>
           <button
             className="btnGhost"
             disabled={!currentContext || loadingDetails}
             onClick={loadContextDetails}
             style={{ width: "100%", marginBottom: "10px" }}
           >
-            {loadingDetails ? "Loading..." : "Load Context Details"}
+            {loadingDetails ? (
+              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                <span className="spinner"></span> Loading...
+              </span>
+            ) : (
+              "🔍 Load Context Details"
+            )}
           </button>
 
           {contextDetails && (
-            <div style={{ 
-              padding: "12px", 
-              backgroundColor: "rgba(255,255,255,0.05)",
-              borderRadius: "6px",
-              fontSize: "13px",
-              marginBottom: "10px"
-            }}>
-              <div style={{ marginBottom: "8px" }}>
-                <strong>Context:</strong> <code>{contextDetails.contextName}</code>
+            <div className="infoBox infoBox-neutral" style={{ marginBottom: "10px" }}>
+              <div style={{ marginBottom: "10px", paddingBottom: "10px", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+                <strong style={{ color: "var(--text)" }}>Context:</strong> <code>{contextDetails.contextName}</code>
               </div>
               <div style={{ marginBottom: "8px" }}>
                 <strong>Cluster:</strong> <code>{contextDetails.clusterName}</code>
               </div>
               {contextDetails.clusterUrl && (
                 <div style={{ marginBottom: "8px", wordBreak: "break-all" }}>
-                  <strong>Cluster URL:</strong> <code style={{ fontSize: "11px" }}>{contextDetails.clusterUrl}</code>
+                  <strong>Cluster URL:</strong><br/>
+                  <code style={{ fontSize: "11px", display: "block", marginTop: 4 }}>{contextDetails.clusterUrl}</code>
                 </div>
               )}
               <div style={{ marginBottom: "8px" }}>
@@ -791,27 +837,28 @@ export default function App() {
               
               {contextDetails.hasCertExpiration && (
                 <>
-                  <div style={{ marginBottom: "8px" }}>
-                    <strong>Certificate Expiration:</strong>{" "}
-                    <code>{new Date(contextDetails.certExpiration).toLocaleDateString()}</code>
-                  </div>
-                  <div style={{ marginBottom: "8px" }}>
-                    <strong>Days Until Expiry:</strong>{" "}
-                    <code style={{ 
-                      color: contextDetails.certExpiresInDays < 0 ? "#f87171" : 
-                             contextDetails.certExpiresInDays <= 7 ? "#fb923c" : 
-                             contextDetails.certExpiresInDays <= 30 ? "#fbbf24" : "#4ade80"
-                    }}>
-                      {contextDetails.certExpiresInDays < 0 ? "EXPIRED" : `${contextDetails.certExpiresInDays} days`}
-                    </code>
+                  <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+                    <div style={{ marginBottom: "8px" }}>
+                      <strong>Certificate Expiration:</strong>{" "}
+                      <code>{new Date(contextDetails.certExpiration).toLocaleDateString()}</code>
+                    </div>
+                    <div style={{ marginBottom: "8px" }}>
+                      <strong>Days Until Expiry:</strong>{" "}
+                      <code style={{ 
+                        color: contextDetails.certExpiresInDays < 0 ? "#f87171" : 
+                               contextDetails.certExpiresInDays <= 7 ? "#fb923c" : 
+                               contextDetails.certExpiresInDays <= 30 ? "#fbbf24" : "#4ade80"
+                      }}>
+                        {contextDetails.certExpiresInDays < 0 ? "EXPIRED" : `${contextDetails.certExpiresInDays} days`}
+                      </code>
+                    </div>
                   </div>
                   {contextDetails.certExpirationWarning && (
-                    <div style={{ 
-                      padding: "8px", 
-                      backgroundColor: contextDetails.certExpiresInDays < 0 ? "#3a1a1a" : "#3a2a1a",
-                      borderRadius: "4px",
-                      color: contextDetails.certExpiresInDays < 0 ? "#f87171" : "#fbbf24",
-                      fontSize: "12px"
+                    <div className={`infoBox ${contextDetails.certExpiresInDays < 0 ? 'infoBox-error' : 'infoBox-warning'}`} style={{ 
+                      marginTop: "10px",
+                      padding: "10px 12px",
+                      fontSize: "12px",
+                      fontWeight: 600
                     }}>
                       {contextDetails.certExpirationWarning}
                     </div>
@@ -821,20 +868,39 @@ export default function App() {
             </div>
           )}
 
-          <div className="sectionTitle">Contexts</div>
-          <ul className="list">
-            {allContexts.slice(0, 12).map((c) => (
-              <li key={c} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                {c === currentContext ? (
-                  <b>
-                    <code>{c}</code>
-                  </b>
-                ) : (
-                  <code>{c}</code>
-                )}
+          <div className="sectionTitle">📋 All Contexts ({allContexts.length})</div>
+          <ul className="list" style={{ 
+            maxHeight: "300px", 
+            overflowY: "auto", 
+            padding: "8px 0 8px 8px", 
+            margin: 0,
+            listStyle: "none"
+          }}>
+            {allContexts.slice(0, 15).map((c) => (
+              <li key={c} style={{ 
+                display: "flex", 
+                alignItems: "center", 
+                justifyContent: "space-between",
+                padding: "8px 10px",
+                marginBottom: "4px",
+                background: c === currentContext ? "rgba(59, 130, 246, 0.12)" : "rgba(255,255,255,0.03)",
+                borderRadius: "8px",
+                border: `1px solid ${c === currentContext ? "rgba(59, 130, 246, 0.3)" : "rgba(255,255,255,0.06)"}`,
+                transition: "all 0.2s ease"
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1 }}>
+                  {c === currentContext && <span style={{ color: "var(--primary)" }}>✓</span>}
+                  <code style={{ 
+                    fontSize: "12px",
+                    fontWeight: c === currentContext ? 600 : 400,
+                    color: c === currentContext ? "var(--text)" : "var(--muted)"
+                  }}>
+                    {c}
+                  </code>
+                </div>
                 <button
                   className="btnDanger"
-                  style={{ marginLeft: 8, fontSize: 12, padding: "2px 8px" }}
+                  style={{ fontSize: 11, padding: "4px 10px", minWidth: "auto" }}
                   title={`Delete context '${c}'`}
                   onClick={async () => {
                     if (!window.confirm(`Delete context '${c}'? This cannot be undone.`)) return;
@@ -852,55 +918,73 @@ export default function App() {
                     }
                   }}
                 >
-                  Delete
+                  🗑️ Delete
                 </button>
               </li>
             ))}
-            {allContexts.length > 12 && <li>…and {allContexts.length - 12} more</li>}
+            {allContexts.length > 15 && (
+              <li style={{ 
+                padding: "8px 10px", 
+                textAlign: "center", 
+                opacity: 0.6,
+                fontSize: "12px"
+              }}>
+                …and {allContexts.length - 15} more contexts
+              </li>
+            )}
+            {allContexts.length === 0 && (
+              <li style={{ 
+                padding: "20px", 
+                textAlign: "center", 
+                opacity: 0.5,
+                fontSize: "13px"
+              }}>
+                No contexts loaded. Click "Load Target" above.
+              </li>
+            )}
           </ul>
 
           {/* Cluster Connectivity Test */}
-          <div className="sectionTitle" style={{ marginTop: "20px" }}>Cluster Info</div>
+          <div className="sectionTitle" style={{ marginTop: "20px" }}>🌐 Cluster Info</div>
           <button
             className="btnGhost"
             disabled={!currentContext || testingCluster}
             onClick={testClusterConnection}
             style={{ width: "100%", marginBottom: "10px" }}
           >
-            {testingCluster ? "Testing..." : "Test Cluster Connectivity"}
+            {testingCluster ? (
+              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                <span className="spinner"></span> Testing...
+              </span>
+            ) : (
+              "🔌 Test Cluster Connectivity"
+            )}
           </button>
 
           {clusterInfo && (
-            <div style={{ 
-              padding: "12px", 
-              backgroundColor: clusterInfo.reachable ? "#1a3a1a" : "#3a1a1a",
-              borderRadius: "6px",
-              fontSize: "13px"
-            }}>
-              <div style={{ marginBottom: "8px" }}>
-                <strong>Status:</strong>{" "}
-                <span style={{ color: clusterInfo.reachable ? "#4ade80" : "#f87171" }}>
-                  {clusterInfo.reachable ? "✓ Connected" : "✗ Unreachable"}
-                </span>
+            <div className={`infoBox ${clusterInfo.reachable ? 'infoBox-success' : 'infoBox-error'}`}>
+              <div style={{ marginBottom: "10px", fontSize: "14px", fontWeight: 600 }}>
+                {clusterInfo.reachable ? "✓ Connected" : "✗ Unreachable"}
               </div>
               
               {clusterInfo.reachable ? (
                 <>
-                  <div style={{ marginBottom: "6px" }}>
+                  <div style={{ marginBottom: "8px" }}>
                     <strong>Version:</strong> <code>{clusterInfo.version}</code>
                   </div>
-                  <div style={{ marginBottom: "6px" }}>
+                  <div style={{ marginBottom: "8px" }}>
                     <strong>Auth:</strong>{" "}
                     <span style={{ color: "#4ade80" }}>✓ Authenticated</span>
                   </div>
                   {clusterInfo.serverUrl && (
-                    <div style={{ marginBottom: "6px", wordBreak: "break-all" }}>
-                      <strong>Server:</strong> <code style={{ fontSize: "11px" }}>{clusterInfo.serverUrl}</code>
+                    <div style={{ wordBreak: "break-all" }}>
+                      <strong>Server:</strong><br/>
+                      <code style={{ fontSize: "11px", display: "block", marginTop: 4 }}>{clusterInfo.serverUrl}</code>
                     </div>
                   )}
                 </>
               ) : (
-                <div style={{ color: "#f87171", fontSize: "12px" }}>
+                <div style={{ fontSize: "12px", lineHeight: 1.6 }}>
                   {clusterInfo.errorMessage}
                 </div>
               )}
@@ -908,17 +992,17 @@ export default function App() {
           )}
 
           {/* Keyboard Shortcuts Info */}
-          <div className="sectionTitle" style={{ marginTop: "20px" }}>⌨️ Shortcuts</div>
-          <ul className="list" style={{ fontSize: "12px", color: "#999" }}>
-            <li><code>Ctrl+K</code> - Quick context switcher</li>
-            <li><code>Ctrl+N</code> - Quick namespace switcher</li>
-            <li><code>Ctrl+M</code> - Quick merge</li>
-            <li><code>Ctrl+F</code> - Search contexts/namespaces</li>
-            <li><code>Esc</code> - Close dropdown</li>
-          </ul>
+          <div className="sectionTitle" style={{ marginTop: "20px" }}>⌨️ Keyboard Shortcuts</div>
+          <div className="infoBox infoBox-info" style={{ fontSize: "12px" }}>
+            <div style={{ marginBottom: "6px" }}><kbd style={{ background: "rgba(0,0,0,0.3)", padding: "2px 6px", borderRadius: "4px", fontFamily: "monospace" }}>Ctrl+K</kbd> Quick context switcher</div>
+            <div style={{ marginBottom: "6px" }}><kbd style={{ background: "rgba(0,0,0,0.3)", padding: "2px 6px", borderRadius: "4px", fontFamily: "monospace" }}>Ctrl+N</kbd> Quick namespace switcher</div>
+            <div style={{ marginBottom: "6px" }}><kbd style={{ background: "rgba(0,0,0,0.3)", padding: "2px 6px", borderRadius: "4px", fontFamily: "monospace" }}>Ctrl+M</kbd> Quick merge</div>
+            <div style={{ marginBottom: "6px" }}><kbd style={{ background: "rgba(0,0,0,0.3)", padding: "2px 6px", borderRadius: "4px", fontFamily: "monospace" }}>Ctrl+F</kbd> Search contexts/namespaces</div>
+            <div><kbd style={{ background: "rgba(0,0,0,0.3)", padding: "2px 6px", borderRadius: "4px", fontFamily: "monospace" }}>Esc</kbd> Close dropdown</div>
+          </div>
         </div>
       </div>
-      <footer style={{ textAlign: "center", padding: "20px", color: "#888", fontSize: "14px" }}>
+      <footer style={{ textAlign: "center", padding: "24px", color: "#666", fontSize: "13px", marginTop: "20px" }}>
         Made with ❤️ by Cipheronic
       </footer>
       

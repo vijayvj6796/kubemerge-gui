@@ -7,6 +7,13 @@
   --muted: rgba(255, 255, 255, 0.70);
   --muted2: rgba(255, 255, 255, 0.55);
   --shadow: 0 14px 35px rgba(0, 0, 0, 0.35);
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.25);
+  --primary: rgba(59, 130, 246, 0.85);
+  --primary-hover: rgba(59, 130, 246, 1);
+  --success: rgba(74, 222, 128, 0.85);
+  --warning: rgba(251, 191, 36, 0.85);
+  --danger: rgba(248, 113, 113, 0.85);
+  --info: rgba(96, 165, 250, 0.85);
 }
 
 * { box-sizing: border-box; }
@@ -22,12 +29,14 @@ body {
               var(--bg);
   color: var(--text);
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  line-height: 1.6;
 }
 
 .container {
-  max-width: 1050px;
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 26px 18px 34px;
+  padding: 24px 20px 40px;
+  min-height: 100vh;
 }
 
 .topbar {
@@ -40,8 +49,13 @@ body {
 
 h1 {
   margin: 0;
-  font-size: 24px;
-  letter-spacing: 0.2px;
+  font-size: 28px;
+  letter-spacing: -0.5px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.7) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .subtitle {
@@ -52,11 +66,13 @@ h1 {
 
 .badge {
   border: 1px solid var(--border);
-  background: rgba(255,255,255,0.05);
-  padding: 6px 10px;
-  border-radius: 999px;
+  background: rgba(255,255,255,0.08);
+  padding: 8px 14px;
+  border-radius: 12px;
   font-size: 12px;
   color: var(--muted);
+  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-sm);
 }
 
 .grid {
@@ -72,15 +88,26 @@ h1 {
 .card {
   border: 1px solid var(--border);
   background: var(--panel);
-  border-radius: 18px;
+  border-radius: 20px;
   box-shadow: var(--shadow);
-  padding: 16px;
+  padding: 20px;
+  backdrop-filter: blur(20px);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
 }
 
 .card h2 {
-  margin: 0 0 12px;
-  font-size: 16px;
+  margin: 0 0 16px;
+  font-size: 18px;
+  font-weight: 600;
   color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .row {
@@ -99,36 +126,124 @@ h1 {
 .pathbox {
   border: 1px solid var(--border);
   background: var(--panel2);
-  border-radius: 14px;
-  padding: 10px 12px;
+  border-radius: 12px;
+  padding: 12px 14px;
   width: 100%;
   word-break: break-all;
   color: var(--muted);
   font-size: 13px;
+  font-family: ui-monospace, monospace;
+  transition: all 0.2s ease;
+}
+
+.pathbox:hover {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.18);
 }
 
 button {
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 10px 12px;
+  padding: 11px 16px;
   cursor: pointer;
   color: var(--text);
   background: rgba(255,255,255,0.07);
-  transition: transform 120ms ease, background 120ms ease, opacity 120ms ease;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  font-size: 14px;
+  position: relative;
+  overflow: hidden;
 }
 
-button:hover { background: rgba(255,255,255,0.10); }
-button:active { transform: translateY(1px); }
-button:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+button:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+button:hover { 
+  background: rgba(255,255,255,0.12);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+button:active { 
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+button:disabled { 
+  opacity: 0.4; 
+  cursor: not-allowed; 
+  transform: none;
+  box-shadow: none;
+}
+
+button:disabled:hover {
+  background: rgba(255,255,255,0.07);
+}
 
 .btnPrimary {
-  background: rgba(59, 130, 246, 0.25);
-  border-color: rgba(59, 130, 246, 0.45);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(96, 165, 250, 0.25));
+  border-color: rgba(59, 130, 246, 0.5);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
 }
-.btnPrimary:hover { background: rgba(59, 130, 246, 0.32); }
+
+.btnPrimary:hover { 
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.4), rgba(96, 165, 250, 0.35));
+  border-color: rgba(59, 130, 246, 0.7);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
+}
+
+.btnPrimary:active {
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
 
 .btnGhost {
   background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.1);
+}
+
+.btnGhost:hover {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.2);
+}
+
+.btnDanger {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+
+.btnDanger:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.6);
+  color: #fecaca;
+}
+
+.btnSuccess {
+  background: rgba(74, 222, 128, 0.15);
+  border-color: rgba(74, 222, 128, 0.4);
+  color: #86efac;
+}
+
+.btnSuccess:hover {
+  background: rgba(74, 222, 128, 0.25);
+  border-color: rgba(74, 222, 128, 0.6);
 }
 
 select {
@@ -136,40 +251,98 @@ select {
   background: rgba(255,255,255,0.06);
   color: var(--text);
   border-radius: 12px;
-  padding: 10px 12px;
+  padding: 11px 14px;
   min-width: 280px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+select:hover {
+  background: rgba(255,255,255,0.09);
+  border-color: rgba(255,255,255,0.18);
+}
+
+select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 code {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 12px;
   color: rgba(255,255,255,0.88);
+  background: rgba(255,255,255,0.06);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(255,255,255,0.08);
 }
 
 .statusbar {
-  margin: 14px 0;
+  margin: 16px 0 20px;
   border: 1px solid var(--border);
   background: rgba(255,255,255,0.05);
-  padding: 10px 12px;
-  border-radius: 14px;
+  padding: 12px 16px;
+  border-radius: 12px;
   color: var(--muted);
   font-size: 13px;
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 20px;
+  transition: all 0.3s ease;
+}
+
+.statusbar::before {
+  content: '●';
+  color: var(--info);
+  font-size: 10px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 .sectionTitle {
-  margin-top: 14px;
-  margin-bottom: 8px;
-  font-size: 12px;
+  margin-top: 20px;
+  margin-bottom: 10px;
+  font-size: 11px;
+  font-weight: 600;
   color: var(--muted2);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sectionTitle::before {
+  content: '';
+  width: 3px;
+  height: 12px;
+  background: linear-gradient(180deg, var(--primary), transparent);
+  border-radius: 2px;
 }
 
 .list {
   margin: 8px 0 0;
-  padding-left: 18px;
+  padding-left: 20px;
   color: var(--muted);
   font-size: 13px;
+  line-height: 1.8;
+}
+
+.list li {
+  margin-bottom: 6px;
+  transition: color 0.2s ease;
+}
+
+.list li:hover {
+  color: var(--text);
 }
 
 /* Custom dropdown (avoids native <select> popup issues in WebView/Wails) */
@@ -179,34 +352,63 @@ code {
 }
 
 .dropdownSelected {
-  padding: 10px 12px;
+  padding: 12px 14px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   cursor: pointer;
   user-select: none;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dropdownSelected:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
 }
 
 .dropdownMenu {
-  margin-top: 6px;
-  max-height: 240px;
+  margin-top: 8px;
+  max-height: 300px;
   overflow-y: auto;
-  border-radius: 12px;
-  background: #1c2435;
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 14px;
+  background: rgba(28, 36, 53, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(20px);
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .dropdownItem {
-  padding: 8px 12px;
+  padding: 10px 14px;
   cursor: pointer;
+  transition: all 0.15s ease;
+  border-left: 3px solid transparent;
 }
 
 .dropdownItem:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.10);
+  border-left-color: var(--primary);
+  padding-left: 17px;
 }
 
 .dropdownItem.active {
-  background: rgba(59, 130, 246, 0.22);
+  background: rgba(59, 130, 246, 0.25);
+  border-left-color: var(--primary);
+  font-weight: 600;
 }
 
 .ctxdd {
@@ -290,20 +492,166 @@ code {
 }
 
 .dropdownSearch {
-  padding: 8px;
+  padding: 10px;
   border-bottom: 1px solid rgba(255,255,255,0.1);
+  background: rgba(0,0,0,0.2);
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .dropdownSearch input {
   width: 100%;
-  padding: 8px 10px;
-  border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.15);
-  background: rgba(255,255,255,0.05);
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.08);
   color: white;
   outline: none;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.dropdownSearch input:focus {
+  border-color: var(--primary);
+  background: rgba(255,255,255,0.12);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .dropdownSearch input::placeholder {
   color: rgba(255,255,255,0.5);
+}
+
+/* Info box variants */
+.infoBox {
+  padding: 14px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.6;
+  border: 1px solid;
+  backdrop-filter: blur(10px);
+  transition: all 0.2s ease;
+}
+
+.infoBox:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.infoBox-success {
+  background: rgba(74, 222, 128, 0.12);
+  border-color: rgba(74, 222, 128, 0.3);
+  color: #86efac;
+}
+
+.infoBox-error {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+}
+
+.infoBox-warning {
+  background: rgba(251, 191, 36, 0.12);
+  border-color: rgba(251, 191, 36, 0.3);
+  color: #fcd34d;
+}
+
+.infoBox-info {
+  background: rgba(96, 165, 250, 0.12);
+  border-color: rgba(96, 165, 250, 0.3);
+  color: #93c5fd;
+}
+
+.infoBox-neutral {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: var(--muted);
+}
+
+/* Input styling */
+input[type="text"],
+input[type="password"] {
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.92);
+  border-radius: 12px;
+  padding: 11px 14px;
+  width: 100%;
+  outline: none;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+input[type="text"]:hover,
+input[type="password"]:hover {
+  background: rgba(255,255,255,0.09);
+  border-color: rgba(255,255,255,0.18);
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus {
+  border-color: var(--primary);
+  background: rgba(255,255,255,0.08);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Loading spinner */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.2);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+/* Badge variants */
+.badge-primary {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: #93c5fd;
+}
+
+.badge-success {
+  background: rgba(74, 222, 128, 0.15);
+  border-color: rgba(74, 222, 128, 0.3);
+  color: #86efac;
+}
+
+.badge-warning {
+  background: rgba(251, 191, 36, 0.15);
+  border-color: rgba(251, 191, 36, 0.3);
+  color: #fcd34d;
+}
+
+.badge-danger {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
 }
