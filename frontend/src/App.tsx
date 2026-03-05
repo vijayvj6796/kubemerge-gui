@@ -21,8 +21,10 @@ import {
   GetContextDetails,
   SetTargetKubeconfig,
 } from "../wailsjs/go/main/App";
+import { EventsOn } from "../wailsjs/runtime/runtime";
 import ContextDropdown from "./components/ContextDropdown";
 import ContextSearchModal, { useContextSearchModal } from "./components/ContextSearchModal";
+import FloatingWidget from "./components/FloatingWidget";
 
 type MergeResult = {
   targetConfigPath: string;
@@ -96,6 +98,10 @@ export default function App() {
   
   // Context search modal from system tray
   const contextSearchModal = useContextSearchModal();
+  
+  // Floating widget state - START IN FLOATING MODE
+  const [showFloatingWidget, setShowFloatingWidget] = useState(true);
+  const [floatingModeEnabled, setFloatingModeEnabled] = useState(true);
 
   const canMerge = useMemo(() => filePath.length > 0 && !busy, [filePath, busy]);
 
@@ -122,6 +128,34 @@ export default function App() {
       }
     }
     detectOSAndLoadTarget();
+  }, []);
+  
+  // Listen for floating widget toggle event from tray
+  useEffect(() => {
+    const unlisten = EventsOn("toggle-floating-widget", () => {
+      setShowFloatingWidget((prev) => !prev);
+    });
+
+    return () => {
+      // Cleanup handled by Wails
+    };
+  }, []);
+  
+  // Listen for floating mode toggle event from tray
+  useEffect(() => {
+    const unlistenMode = EventsOn("toggle-floating-mode", () => {
+      setFloatingModeEnabled((prev) => !prev);
+      setShowFloatingWidget(true);
+    });
+    
+    const unlistenSet = EventsOn("set-floating-mode", (enabled: boolean) => {
+      setFloatingModeEnabled(enabled);
+      setShowFloatingWidget(enabled);
+    });
+
+    return () => {
+      // Cleanup handled by Wails
+    };
   }, []);
 
   // Keyboard shortcuts
@@ -466,8 +500,26 @@ export default function App() {
   }, [allNamespaces, namespaceSearchTerm]);
 
   return (
-    <div className="container">
-      <div className="topbar">
+    <div className={`container ${floatingModeEnabled ? 'floating-mode' : ''}`} style={floatingModeEnabled ? {
+      background: 'transparent',
+      overflow: 'hidden',
+      padding: 0
+    } : {}}>
+      {/* Floating mode - show only the widget */}
+      {floatingModeEnabled ? (
+        <div style={{ 
+          width: '100%', 
+          height: '100%', 
+          display: 'flex', 
+          alignItems: 'flex-start', 
+          justifyContent: 'flex-start',
+          padding: '0'
+        }}>
+          <FloatingWidget />
+        </div>
+      ) : (
+        <>
+          <div className="topbar">
         <div>
           <h1>⚡ KubeMerge GUI</h1>
           <p className="subtitle">
@@ -475,14 +527,24 @@ export default function App() {
             <code>kubectx</code>
           </p>
         </div>
-        <div className="badge">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ opacity: 0.6 }}>Context:</span> 
-            <code style={{ fontWeight: 600 }}>{currentContext || "(none)"}</code>
-          </div>
-          <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ opacity: 0.6 }}>Namespace:</span> 
-            <code style={{ fontWeight: 600 }}>{currentNamespace || "default"}</code>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <button
+            className="btnGhost"
+            onClick={() => setShowFloatingWidget(!showFloatingWidget)}
+            style={{ fontSize: 13, padding: "6px 12px" }}
+            title="Toggle floating context widget"
+          >
+            {showFloatingWidget ? '🔻 Hide Widget' : '🎯 Show Widget'}
+          </button>
+          <div className="badge">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ opacity: 0.6 }}>Context:</span> 
+              <code style={{ fontWeight: 600 }}>{currentContext || "(none)"}</code>
+            </div>
+            <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ opacity: 0.6 }}>Namespace:</span> 
+              <code style={{ fontWeight: 600 }}>{currentNamespace || "default"}</code>
+            </div>
           </div>
         </div>
       </div>
@@ -1005,11 +1067,16 @@ export default function App() {
       <footer style={{ textAlign: "center", padding: "24px", color: "#666", fontSize: "13px", marginTop: "20px" }}>
         Made with ❤️ by Cipheronic
       </footer>
+        </>
+      )}
       
       {/* Context Search Modal (triggered from system tray) */}
       {contextSearchModal.isOpen && (
         <ContextSearchModal onClose={contextSearchModal.close} />
       )}
+      
+      {/* Floating Context Widget (when not in floating mode) */}
+      {!floatingModeEnabled && showFloatingWidget && <FloatingWidget />}
     </div>
   );
 }

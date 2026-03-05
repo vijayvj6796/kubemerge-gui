@@ -102,6 +102,10 @@ export function SelectKubeconfig() {
   return window['go']['main']['App']['SelectKubeconfig']();
 }
 
+export function SetFloatingMode(arg1) {
+  return window['go']['main']['App']['SetFloatingMode'](arg1);
+}
+
 export function SetNamespaceForPath(arg1, arg2, arg3) {
   return window['go']['main']['App']['SetNamespaceForPath'](arg1, arg2, arg3);
 }
@@ -112,6 +116,10 @@ export function SetTargetKubeconfig(arg1) {
 
 export function ShowContextSearchDialog() {
   return window['go']['main']['App']['ShowContextSearchDialog']();
+}
+
+export function StartInFloatingMode() {
+  return window['go']['main']['App']['StartInFloatingMode']();
 }
 
 export function SwitchContext(arg1) {
@@ -136,4 +144,12 @@ export function TestClusterConnectivity(arg1, arg2) {
 
 export function TestFileExists(arg1) {
   return window['go']['main']['App']['TestFileExists'](arg1);
+}
+
+export function ToggleFloatingMode() {
+  return window['go']['main']['App']['ToggleFloatingMode']();
+}
+
+export function ToggleFloatingWidget() {
+  return window['go']['main']['App']['ToggleFloatingWidget']();
 }

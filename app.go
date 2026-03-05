@@ -77,6 +77,7 @@ func deleteContextFromFile(path, name string) error {
 type App struct {
 	ctx              context.Context
 	targetKubeconfig string // Stores the current target kubeconfig path for tray operations
+	floatingMode     bool   // Tracks if widget mode is enabled
 }
 
 func NewApp() *App {

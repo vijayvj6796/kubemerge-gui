@@ -21,20 +21,26 @@ func main() {
 	setupSystray(app)
 
 	err := wails.Run(&options.App{
-		Title:  "KubeMerge GUI",
-		Width:  900,
-		Height: 600,
+		Title:            "KubeMerge Widget",
+		Width:            380,
+		Height:           500,
+		BackgroundColour: &options.RGBA{R: 11, G: 16, B: 32, A: 255},
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
-		OnStartup: app.startup,
+		OnStartup: func(ctx context.Context) {
+			app.startup(ctx)
+			// Start in widget mode
+			app.StartInFloatingMode()
+		},
 		Bind: []interface{}{
 			app,
 		},
-		// Hide to tray instead of close
+		// Handle window close/hide
 		OnBeforeClose: func(ctx context.Context) (prevent bool) {
+			// Always hide to tray instead of closing
 			runtime.WindowHide(ctx)
-			return true // Return true to prevent closing
+			return true // Prevent actual close - use tray to quit
 		},
 	})
 

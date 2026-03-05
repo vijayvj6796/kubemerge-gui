@@ -103,3 +103,18 @@ func (a *App) ShowContextSearchDialog() error {
 
 	return nil
 }
+
+// ToggleFloatingWidget shows/hides the floating context widget
+func (a *App) ToggleFloatingWidget() error {
+	if a.ctx == nil {
+		return fmt.Errorf("app context not initialized")
+	}
+
+	// Show the main window if hidden
+	runtime.WindowShow(a.ctx)
+
+	// Emit event to toggle floating widget in frontend
+	runtime.EventsEmit(a.ctx, "toggle-floating-widget")
+
+	return nil
+}

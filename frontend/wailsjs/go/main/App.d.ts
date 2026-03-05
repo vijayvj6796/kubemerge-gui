@@ -52,11 +52,15 @@ export function SearchContexts(arg1:string):Promise<Array<main.ContextInfo>>;
 
 export function SelectKubeconfig():Promise<string>;
 
+export function SetFloatingMode(arg1:boolean):Promise<void>;
+
 export function SetNamespaceForPath(arg1:string,arg2:string,arg3:string):Promise<void>;
 
 export function SetTargetKubeconfig(arg1:string):Promise<void>;
 
 export function ShowContextSearchDialog():Promise<void>;
+
+export function StartInFloatingMode():Promise<void>;
 
 export function SwitchContext(arg1:string):Promise<void>;
 
@@ -69,3 +73,7 @@ export function SwitchNamespace(arg1:string,arg2:string,arg3:string):Promise<voi
 export function TestClusterConnectivity(arg1:string,arg2:string):Promise<main.ClusterInfo>;
 
 export function TestFileExists(arg1:string):Promise<boolean>;
+
+export function ToggleFloatingMode():Promise<void>;
+
+export function ToggleFloatingWidget():Promise<void>;
