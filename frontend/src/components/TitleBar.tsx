@@ -11,8 +11,8 @@ export default function TitleBar() {
         // This CSS property tells Wails: dragging here moves the OS window
         "--wails-draggable": "drag",
         height: 36,
-        background: "rgba(8, 12, 24, 0.98)",
-        borderBottom: "1px solid rgba(99,102,241,0.2)",
+        background: "#0d1221",
+        borderBottom: "1px solid rgba(99,102,241,0.35)",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",

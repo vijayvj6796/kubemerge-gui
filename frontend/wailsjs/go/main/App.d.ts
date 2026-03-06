@@ -60,6 +60,8 @@ export function SetTargetKubeconfig(arg1:string):Promise<void>;
 
 export function ShowContextSearchDialog():Promise<void>;
 
+export function ShowWindowFromTray():Promise<void>;
+
 export function StartInFloatingMode():Promise<void>;
 
 export function SwitchContext(arg1:string):Promise<void>;

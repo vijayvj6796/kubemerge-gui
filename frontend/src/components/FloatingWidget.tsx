@@ -6,10 +6,7 @@ import {
   GetCurrentNamespaceForPath,
   ListNamespacesForPath,
   SetNamespaceForPath,
-  ResolveTargetKubeconfig,
-  TestFileExists,
-  GetOS,
-  SetTargetKubeconfig,
+  GetTargetKubeconfig,
   WidgetCollapse,
   WidgetExpand,
 } from "../../wailsjs/go/main/App";
@@ -63,33 +60,39 @@ function FloatingWidgetInner() {
   const [error, setError]                     = useState("");
 
   // ── Bootstrap ──────────────────────────────────────────────────────
+  // GetTargetKubeconfig() returns a plain string (no error) in Go.
+  // We retry with delays to avoid a race condition where App.tsx has not
+  // called SetTargetKubeconfig yet. Critical for WSL — without this the
+  // widget falls back to ~/.kube/config instead of the WSL path.
   useEffect(() => {
-    (async () => {
-      try {
-        const os   = await GetOS();
-        const kind = os === "windows" ? "windows" : "linux";
-        const path = await ResolveTargetKubeconfig({ kind, distro: "", linuxUser: "" } as any);
-        if (!(await TestFileExists(path))) {
-          setError("kubeconfig not found"); setLoading(false); return;
-        }
-        await SetTargetKubeconfig(path);
-        setTargetPath(path);
-        const [ctxs, cur] = await Promise.all([
-          GetAllContextsForPath(path) as Promise<string[]>,
-          GetCurrentContextForPath(path) as Promise<string>,
-        ]);
-        setAllContexts(ctxs);
-        setCurrentContext(cur);
+    async function init() {
+      for (let attempt = 0; attempt < 15; attempt++) {
         try {
-          setCurrentNs((await GetCurrentNamespaceForPath(path, cur) as string) || "default");
-        } catch { setCurrentNs("default"); }
-        setStatus(`${ctxs.length} ctx`);
-      } catch (e: any) {
-        setError(e?.message ?? String(e));
-      } finally {
-        setLoading(false);
+          const path: string = await (GetTargetKubeconfig as () => Promise<string>)();
+          if (path) {
+            const [ctxs, cur] = await Promise.all([
+              GetAllContextsForPath(path) as Promise<string[]>,
+              GetCurrentContextForPath(path) as Promise<string>,
+            ]);
+            if (ctxs && ctxs.length > 0) {
+              setTargetPath(path);
+              setAllContexts(ctxs);
+              setCurrentContext(cur);
+              try {
+                setCurrentNs((await GetCurrentNamespaceForPath(path, cur) as string) || "default");
+              } catch { setCurrentNs("default"); }
+              setStatus(`${ctxs.length} ctx`);
+              setLoading(false);
+              return;
+            }
+          }
+        } catch { /* not ready yet */ }
+        await new Promise(r => setTimeout(r, 400));
       }
-    })();
+      setError("Could not load kubeconfig — load target in main app first");
+      setLoading(false);
+    }
+    init();
   }, []);
 
   // ── Load namespaces ────────────────────────────────────────────────
@@ -134,12 +137,8 @@ function FloatingWidgetInner() {
         setCurrentNs((await GetCurrentNamespaceForPath(targetPath, ctx) as string) || "default");
       } catch { setCurrentNs("default"); }
       setContextSearch("");
-      setStatus(`✓ ${ctx.slice(0,12)}`);
-    } catch (e: any) {
-      console.error("Failed to switch context:", e);
-      setError(`Switch failed: ${e?.message || String(e)}`);
-      setTimeout(() => setError(""), 3000);
-    } finally { setSwitching(false); }
+      setStatus(`${updated.length} ctx`);
+    } catch {} finally { setSwitching(false); }
   }
 
   // ── Namespace switch ───────────────────────────────────────────────
@@ -320,7 +319,7 @@ function FloatingWidgetInner() {
                 {shortCtx || "—"}
               </span>
             </div>
-            <div className="kw-sc" style={{ maxHeight:220, overflowY:"auto", padding:"0 6px 6px", pointerEvents:"auto" }}>
+            <div className="kw-sc" style={{ maxHeight:220, overflowY:"auto", padding:"0 6px 6px" }}>
               {filteredCtx.length === 0 && <div style={eSt}>no results</div>}
               {filteredCtx.map(ctx => {
                 const on = ctx === currentContext;
@@ -331,21 +330,18 @@ function FloatingWidgetInner() {
                       background: on ? "rgba(34,197,94,0.1)" : "transparent",
                       border: `1px solid ${on ? "rgba(34,197,94,0.2)" : "transparent"}`,
                       cursor: on ? "default" : "pointer",
-                      opacity: switching ? 0.5 : 1,
                     }}>
                     <span style={{ ...dSt,
                       background: on ? "#22c55e" : "rgba(100,116,139,0.22)",
-                      boxShadow: on ? "0 0 5px #22c55e70" : "none",
-                      pointerEvents: "none" }} />
+                      boxShadow: on ? "0 0 5px #22c55e70" : "none" }} />
                     <span style={{ flex:1, textAlign:"left", fontSize:11,
                       fontWeight: on ? 600 : 400,
                       color: on ? "#86efac" : "rgba(203,213,225,0.75)",
-                      overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
-                      pointerEvents: "none" }}>
+                      overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                       {ctx}
                     </span>
-                    {!on && <span style={{ ...aSt, pointerEvents: "none" }}>→</span>}
-                    {on  && <span style={{ fontSize:10, color:"#22c55e", flexShrink:0, pointerEvents: "none" }}>✓</span>}
+                    {!on && <span style={aSt}>→</span>}
+                    {on  && <span style={{ fontSize:10, color:"#22c55e", flexShrink:0 }}>✓</span>}
                   </button>
                 );
               })}
@@ -446,8 +442,6 @@ const rSt: React.CSSProperties = {
   width:"100%", padding:"7px 8px",
   borderRadius:8, marginBottom:2,
   fontFamily:"inherit", transition:"background .1s, border-color .1s",
-  pointerEvents:"auto",
-  userSelect:"none",
 };
 const dSt: React.CSSProperties = {
   width:6, height:6, borderRadius:"50%", flexShrink:0,

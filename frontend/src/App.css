@@ -1,10 +1,30 @@
+/* ── Mode handling ───────────────────────────────────────────────────────────
+   Widget mode  → transparent, no scroll (FAB/panel draw their own bg)
+   Full GUI mode → solid dark background, full scroll
+   ─────────────────────────────────────────────────────────────────────────── */
+
 html, body, #root, #app {
-  margin: 0; padding: 0;
-  width: 100%; height: 100%;
-  background: transparent !important;
-  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
 }
 
+/* Full GUI default — solid background, scrollable */
+html, body {
+  background: #0b1020;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Widget / floating mode — transparent, no scroll */
+body:has(.floating-mode),
+html:has(.floating-mode) {
+  background: transparent !important;
+  overflow: hidden !important;
+}
+
+/* ── Variables ───────────────────────────────────────────────────────────── */
 :root {
   --bg: #0b1020;
   --panel: rgba(255, 255, 255, 0.06);
@@ -25,34 +45,35 @@ html, body, #root, #app {
 
 * { box-sizing: border-box; }
 
-html, body {
-  height: 100%;
-  margin: 0;
-}
-
 body {
   background: radial-gradient(1200px 700px at 10% 0%, rgba(120, 119, 198, 0.18), transparent 60%),
               radial-gradient(1000px 650px at 90% 30%, rgba(56, 189, 248, 0.14), transparent 55%),
-              var(--bg);
+              #0b1020;
   color: var(--text);
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   line-height: 1.6;
 }
 
+/* ── Container ───────────────────────────────────────────────────────────── */
 .container {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 24px 20px 40px;
+  padding: 24px 20px 60px;   /* extra bottom padding so footer is never clipped */
   min-height: 100vh;
+  background: transparent;
 }
 
+/* Widget/floating mode container — no padding, transparent */
 .container.floating-mode {
   max-width: none;
   margin: 0;
   padding: 0;
   background: transparent;
+  min-height: unset;
+  overflow: hidden;
 }
 
+/* ── Top bar ─────────────────────────────────────────────────────────────── */
 .topbar {
   display: flex;
   align-items: baseline;
@@ -89,16 +110,19 @@ h1 {
   box-shadow: var(--shadow-sm);
 }
 
+/* ── Grid ────────────────────────────────────────────────────────────────── */
 .grid {
   display: grid;
   grid-template-columns: 1.2fr 0.8fr;
   gap: 14px;
+  align-items: start;         /* cards don't stretch to each other's height */
 }
 
 @media (max-width: 920px) {
   .grid { grid-template-columns: 1fr; }
 }
 
+/* ── Cards ───────────────────────────────────────────────────────────────── */
 .card {
   border: 1px solid var(--border);
   background: var(--panel);
@@ -124,6 +148,7 @@ h1 {
   gap: 8px;
 }
 
+/* ── Misc layout ─────────────────────────────────────────────────────────── */
 .row {
   display: flex;
   gap: 10px;
@@ -155,6 +180,7 @@ h1 {
   border-color: rgba(255,255,255,0.18);
 }
 
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
 button {
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -182,84 +208,69 @@ button::before {
   transition: width 0.6s, height 0.6s;
 }
 
-button:hover::before {
-  width: 300px;
-  height: 300px;
-}
-
-button:hover { 
+button:hover::before { width: 300px; height: 300px; }
+button:hover {
   background: rgba(255,255,255,0.12);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
-
-button:active { 
+button:active {
   transform: translateY(0);
   box-shadow: 0 2px 6px rgba(0,0,0,0.2);
 }
-
-button:disabled { 
-  opacity: 0.4; 
-  cursor: not-allowed; 
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
   transform: none;
   box-shadow: none;
 }
-
-button:disabled:hover {
-  background: rgba(255,255,255,0.07);
-}
+button:disabled:hover { background: rgba(255,255,255,0.07); }
 
 .btnPrimary {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(96, 165, 250, 0.25));
-  border-color: rgba(59, 130, 246, 0.5);
+  background: linear-gradient(135deg, rgba(59,130,246,0.3), rgba(96,165,250,0.25));
+  border-color: rgba(59,130,246,0.5);
   color: #fff;
   font-weight: 600;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+  box-shadow: 0 4px 12px rgba(59,130,246,0.2);
 }
-
-.btnPrimary:hover { 
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.4), rgba(96, 165, 250, 0.35));
-  border-color: rgba(59, 130, 246, 0.7);
-  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
+.btnPrimary:hover {
+  background: linear-gradient(135deg, rgba(59,130,246,0.4), rgba(96,165,250,0.35));
+  border-color: rgba(59,130,246,0.7);
+  box-shadow: 0 6px 16px rgba(59,130,246,0.3);
 }
-
-.btnPrimary:active {
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-}
+.btnPrimary:active { box-shadow: 0 2px 8px rgba(59,130,246,0.3); }
 
 .btnGhost {
   background: rgba(255,255,255,0.04);
   border-color: rgba(255,255,255,0.1);
 }
-
 .btnGhost:hover {
   background: rgba(255,255,255,0.08);
   border-color: rgba(255,255,255,0.2);
 }
 
 .btnDanger {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239,68,68,0.15);
+  border-color: rgba(239,68,68,0.4);
   color: #fca5a5;
 }
-
 .btnDanger:hover {
-  background: rgba(239, 68, 68, 0.25);
-  border-color: rgba(239, 68, 68, 0.6);
+  background: rgba(239,68,68,0.25);
+  border-color: rgba(239,68,68,0.6);
   color: #fecaca;
 }
 
 .btnSuccess {
-  background: rgba(74, 222, 128, 0.15);
-  border-color: rgba(74, 222, 128, 0.4);
+  background: rgba(74,222,128,0.15);
+  border-color: rgba(74,222,128,0.4);
   color: #86efac;
 }
-
 .btnSuccess:hover {
-  background: rgba(74, 222, 128, 0.25);
-  border-color: rgba(74, 222, 128, 0.6);
+  background: rgba(74,222,128,0.25);
+  border-color: rgba(74,222,128,0.6);
 }
 
+/* ── Form elements ───────────────────────────────────────────────────────── */
 select {
   border: 1px solid var(--border);
   background: rgba(255,255,255,0.06);
@@ -271,16 +282,14 @@ select {
   transition: all 0.2s ease;
   font-size: 14px;
 }
-
 select:hover {
   background: rgba(255,255,255,0.09);
   border-color: rgba(255,255,255,0.18);
 }
-
 select:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
 }
 
 code {
@@ -293,6 +302,31 @@ code {
   border: 1px solid rgba(255,255,255,0.08);
 }
 
+input[type="text"],
+input[type="password"] {
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.92);
+  border-radius: 12px;
+  padding: 11px 14px;
+  width: 100%;
+  outline: none;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+input[type="text"]:hover,
+input[type="password"]:hover {
+  background: rgba(255,255,255,0.09);
+  border-color: rgba(255,255,255,0.18);
+}
+input[type="text"]:focus,
+input[type="password"]:focus {
+  border-color: var(--primary);
+  background: rgba(255,255,255,0.08);
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+}
+
+/* ── Status bar ──────────────────────────────────────────────────────────── */
 .statusbar {
   margin: 16px 0 20px;
   border: 1px solid var(--border);
@@ -308,7 +342,6 @@ code {
   min-height: 20px;
   transition: all 0.3s ease;
 }
-
 .statusbar::before {
   content: '●';
   color: var(--info);
@@ -321,6 +354,7 @@ code {
   50% { opacity: 0.5; }
 }
 
+/* ── Section titles ──────────────────────────────────────────────────────── */
 .sectionTitle {
   margin-top: 20px;
   margin-bottom: 10px;
@@ -333,7 +367,6 @@ code {
   align-items: center;
   gap: 8px;
 }
-
 .sectionTitle::before {
   content: '';
   width: 3px;
@@ -342,34 +375,34 @@ code {
   border-radius: 2px;
 }
 
+/* ── Context list ────────────────────────────────────────────────────────── */
+/* No max-height cap — let the card scroll naturally with the page */
 .list {
   margin: 8px 0 0;
-  padding-left: 20px;
+  padding-left: 0;
   color: var(--muted);
   font-size: 13px;
   line-height: 1.8;
+  list-style: none;
+  max-height: none !important;    /* ← was 300px, now fully visible */
+  overflow-y: visible !important;
 }
-
 .list li {
   margin-bottom: 6px;
   transition: color 0.2s ease;
 }
+.list li:hover { color: var(--text); }
 
-.list li:hover {
-  color: var(--text);
-}
-
-/* Custom dropdown (avoids native <select> popup issues in WebView/Wails) */
+/* ── Dropdowns ───────────────────────────────────────────────────────────── */
 .dropdown {
   position: relative;
   width: 100%;
 }
-
 .dropdownSelected {
   padding: 12px 14px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
   cursor: pointer;
   user-select: none;
   transition: all 0.2s ease;
@@ -377,59 +410,69 @@ code {
   align-items: center;
   justify-content: space-between;
 }
-
 .dropdownSelected:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.25);
 }
-
 .dropdownMenu {
   margin-top: 8px;
   max-height: 300px;
   overflow-y: auto;
   border-radius: 14px;
-  background: rgba(28, 36, 53, 0.98);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  background: rgba(28,36,53,0.98);
+  border: 1px solid rgba(255,255,255,0.15);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
   backdrop-filter: blur(20px);
   animation: slideDown 0.2s ease;
 }
-
 @keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
-
 .dropdownItem {
   padding: 10px 14px;
   cursor: pointer;
   transition: all 0.15s ease;
   border-left: 3px solid transparent;
 }
-
 .dropdownItem:hover {
-  background: rgba(255, 255, 255, 0.10);
+  background: rgba(255,255,255,0.10);
   border-left-color: var(--primary);
   padding-left: 17px;
 }
-
 .dropdownItem.active {
-  background: rgba(59, 130, 246, 0.25);
+  background: rgba(59,130,246,0.25);
   border-left-color: var(--primary);
   font-weight: 600;
 }
-
-.ctxdd {
-  position: relative;
-  width: 100%;
+.dropdownSearch {
+  padding: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  background: rgba(0,0,0,0.2);
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
+.dropdownSearch input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.08);
+  color: white;
+  outline: none;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+.dropdownSearch input:focus {
+  border-color: var(--primary);
+  background: rgba(255,255,255,0.12);
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+}
+.dropdownSearch input::placeholder { color: rgba(255,255,255,0.5); }
 
+/* ── Context dropdown component ──────────────────────────────────────────── */
+.ctxdd { position: relative; width: 100%; }
 .ctxdd__trigger {
   width: 100%;
   padding: 14px 16px;
@@ -442,31 +485,24 @@ code {
   align-items: center;
   cursor: pointer;
 }
-
-.ctxdd__caret {
-  opacity: 0.8;
-}
-
+.ctxdd__caret { opacity: 0.8; }
 .ctxdd__panel {
   position: absolute;
   top: calc(100% + 8px);
-  left: 0;
-  right: 0;
+  left: 0; right: 0;
   border-radius: 14px;
   border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(15, 20, 35, 0.98);
+  background: rgba(15,20,35,0.98);
   overflow: hidden;
   z-index: 50;
 }
-
 .ctxdd__search {
   position: sticky;
   top: 0;
   padding: 10px;
-  background: rgba(15, 20, 35, 0.98);
+  background: rgba(15,20,35,0.98);
   border-bottom: 1px solid rgba(255,255,255,0.06);
 }
-
 .ctxdd__search input {
   width: 100%;
   padding: 12px;
@@ -476,12 +512,7 @@ code {
   color: #fff;
   outline: none;
 }
-
-.ctxdd__list {
-  max-height: 260px;
-  overflow-y: auto;
-}
-
+.ctxdd__list { max-height: 260px; overflow-y: auto; }
 .ctxdd__item {
   width: 100%;
   text-align: left;
@@ -491,52 +522,11 @@ code {
   color: #fff;
   cursor: pointer;
 }
+.ctxdd__item:hover { background: rgba(255,255,255,0.06); }
+.ctxdd__item.is-selected { background: rgba(80,130,255,0.22); }
+.ctxdd__empty { padding: 14px 16px; opacity: 0.75; }
 
-.ctxdd__item:hover {
-  background: rgba(255,255,255,0.06);
-}
-
-.ctxdd__item.is-selected {
-  background: rgba(80, 130, 255, 0.22);
-}
-
-.ctxdd__empty {
-  padding: 14px 16px;
-  opacity: 0.75;
-}
-
-.dropdownSearch {
-  padding: 10px;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
-  background: rgba(0,0,0,0.2);
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.dropdownSearch input {
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(255,255,255,0.18);
-  background: rgba(255,255,255,0.08);
-  color: white;
-  outline: none;
-  transition: all 0.2s ease;
-  font-size: 14px;
-}
-
-.dropdownSearch input:focus {
-  border-color: var(--primary);
-  background: rgba(255,255,255,0.12);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.dropdownSearch input::placeholder {
-  color: rgba(255,255,255,0.5);
-}
-
-/* Info box variants */
+/* ── Info boxes ──────────────────────────────────────────────────────────── */
 .infoBox {
   padding: 14px 16px;
   border-radius: 12px;
@@ -546,126 +536,35 @@ code {
   backdrop-filter: blur(10px);
   transition: all 0.2s ease;
 }
-
 .infoBox:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
+.infoBox-success { background: rgba(74,222,128,0.12); border-color: rgba(74,222,128,0.3); color: #86efac; }
+.infoBox-error   { background: rgba(239,68,68,0.12);  border-color: rgba(239,68,68,0.3);  color: #fca5a5; }
+.infoBox-warning { background: rgba(251,191,36,0.12); border-color: rgba(251,191,36,0.3); color: #fcd34d; }
+.infoBox-info    { background: rgba(96,165,250,0.12); border-color: rgba(96,165,250,0.3); color: #93c5fd; }
+.infoBox-neutral { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.15); color: var(--muted); }
 
-.infoBox-success {
-  background: rgba(74, 222, 128, 0.12);
-  border-color: rgba(74, 222, 128, 0.3);
-  color: #86efac;
-}
-
-.infoBox-error {
-  background: rgba(239, 68, 68, 0.12);
-  border-color: rgba(239, 68, 68, 0.3);
-  color: #fca5a5;
-}
-
-.infoBox-warning {
-  background: rgba(251, 191, 36, 0.12);
-  border-color: rgba(251, 191, 36, 0.3);
-  color: #fcd34d;
-}
-
-.infoBox-info {
-  background: rgba(96, 165, 250, 0.12);
-  border-color: rgba(96, 165, 250, 0.3);
-  color: #93c5fd;
-}
-
-.infoBox-neutral {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.15);
-  color: var(--muted);
-}
-
-/* Input styling */
-input[type="text"],
-input[type="password"] {
-  border: 1px solid var(--border);
-  background: rgba(255,255,255,0.06);
-  color: rgba(255,255,255,0.92);
-  border-radius: 12px;
-  padding: 11px 14px;
-  width: 100%;
-  outline: none;
-  transition: all 0.2s ease;
-  font-size: 14px;
-}
-
-input[type="text"]:hover,
-input[type="password"]:hover {
-  background: rgba(255,255,255,0.09);
-  border-color: rgba(255,255,255,0.18);
-}
-
-input[type="text"]:focus,
-input[type="password"]:focus {
-  border-color: var(--primary);
-  background: rgba(255,255,255,0.08);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-/* Loading spinner */
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
+/* ── Spinner ─────────────────────────────────────────────────────────────── */
+@keyframes spin { to { transform: rotate(360deg); } }
 .spinner {
   display: inline-block;
-  width: 16px;
-  height: 16px;
+  width: 16px; height: 16px;
   border: 2px solid rgba(255,255,255,0.2);
   border-top-color: var(--primary);
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
 }
 
-/* Badge variants */
-.badge-primary {
-  background: rgba(59, 130, 246, 0.15);
-  border-color: rgba(59, 130, 246, 0.3);
-  color: #93c5fd;
-}
+/* ── Badge variants ──────────────────────────────────────────────────────── */
+.badge-primary { background: rgba(59,130,246,0.15); border-color: rgba(59,130,246,0.3); color: #93c5fd; }
+.badge-success { background: rgba(74,222,128,0.15); border-color: rgba(74,222,128,0.3); color: #86efac; }
+.badge-warning { background: rgba(251,191,36,0.15); border-color: rgba(251,191,36,0.3); color: #fcd34d; }
+.badge-danger  { background: rgba(239,68,68,0.15);  border-color: rgba(239,68,68,0.3);  color: #fca5a5; }
 
-.badge-success {
-  background: rgba(74, 222, 128, 0.15);
-  border-color: rgba(74, 222, 128, 0.3);
-  color: #86efac;
-}
-
-.badge-warning {
-  background: rgba(251, 191, 36, 0.15);
-  border-color: rgba(251, 191, 36, 0.3);
-  color: #fcd34d;
-}
-
-.badge-danger {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: rgba(239, 68, 68, 0.3);
-  color: #fca5a5;
-}
-
-/* Scrollbar styling */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.02);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 4px;
-  transition: background 0.2s ease;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
-}
+/* ── Scrollbars ──────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 4px; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }

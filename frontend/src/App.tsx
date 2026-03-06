@@ -415,7 +415,17 @@ export default function App() {
   return (
     <div
       className={`container ${floatingModeEnabled ? "floating-mode" : ""}`}
-      style={floatingModeEnabled ? { background: "transparent", overflow: "hidden", padding: 0 } : {}}
+      style={floatingModeEnabled
+        ? { background: "transparent", overflow: "hidden", padding: 0 }
+        : {
+            background: "#0b1020",
+            overflowY: "auto",
+            overflowX: "hidden",
+            minHeight: "100vh",
+            height: "100%",
+            padding: "0 0 40px 0",
+          }
+      }
     >
       {/* ── FLOATING WIDGET MODE ──────────────────────────────────────── */}
       {floatingModeEnabled ? (

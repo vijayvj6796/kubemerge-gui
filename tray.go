@@ -109,12 +109,8 @@ func onReady() {
 		for {
 			select {
 			case <-mShow.ClickedCh:
-				if app.ctx != nil {
-					runtime.WindowShow(app.ctx)
-					// If in floating mode, make sure it's set correctly
-					if app.floatingMode {
-						runtime.WindowSetAlwaysOnTop(app.ctx, true)
-					}
+				if app != nil && app.ctx != nil {
+					app.ShowWindowFromTray()
 				}
 			case <-mHide.ClickedCh:
 				if app.ctx != nil {

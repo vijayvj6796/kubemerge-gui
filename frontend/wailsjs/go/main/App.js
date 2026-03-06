@@ -118,6 +118,10 @@ export function ShowContextSearchDialog() {
   return window['go']['main']['App']['ShowContextSearchDialog']();
 }
 
+export function ShowWindowFromTray() {
+  return window['go']['main']['App']['ShowWindowFromTray']();
+}
+
 export function StartInFloatingMode() {
   return window['go']['main']['App']['StartInFloatingMode']();
 }
